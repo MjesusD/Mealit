@@ -57,6 +57,19 @@ Meal-It busca ser un asistente diario para una alimentación más personalizada 
 
 ![image](https://github.com/user-attachments/assets/113d23e6-9a7a-493f-a544-ac5ea41a0e74)
 
+### Estructura del proyecto
+
+```json
+/lib
+├── main.dart                # Punto de entrada principal de la aplicación
+├── assets/                  # Recursos como imágenes, íconos, fuentes, etc.
+├── models/                  # Modelos de datos usados en la app
+├── pages/                   # Pantallas principales de la interfaz de usuario
+├── services/                # Servicios para consumir APIs externas
+├── utils/                   # Funciones auxiliares, constantes o helpers
+├── widgets/                 # Componentes reutilizables como tarjetas, botones, etc.
+```
+
 
 ## Links 
 
