@@ -1,7 +1,7 @@
 
 # Meal-it
 
-MealIt busca ser un asistente diario para una alimentación más personalizada y basada en distintos tipos de rutina.
+Meal-It busca ser un asistente diario para una alimentación más personalizada y basada en distintos tipos de rutina.
 
 ## Características
 
