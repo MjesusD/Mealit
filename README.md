@@ -59,7 +59,7 @@ Meal-It busca ser un asistente diario para una alimentación más personalizada 
 
 ### Estructura del proyecto:
 
-```json
+```plaintext
 /lib
 ├── main.dart                # Punto de entrada principal de la aplicación
 ├── assets/                  # Recursos como imágenes, íconos, fuentes, etc.
