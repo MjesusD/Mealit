@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:mealit/services/api_service.dart';
-import 'package:mealit/models/meal_model.dart';
+import '../services/api_service.dart';
+import '../models/meal_model.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-
+  const HomePage({super.key, required this.title});
+  final String title;
   @override
   State<HomePage> createState() => _HomePageState();
 }

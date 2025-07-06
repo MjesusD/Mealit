@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mealit/pages/home.dart';
+import '../pages/home.dart';
 import 'package:logger/logger.dart';
 
 final logger = Logger();
@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const HomePage(),
+      home:  HomePage(title: 'MEALIT',),
       debugShowCheckedModeBanner: false,
     );
   }
