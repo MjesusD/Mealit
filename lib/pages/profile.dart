@@ -273,14 +273,6 @@ class ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  /*@override
-  void initState() {
-    void dispose() {
-      usernameController.dispose(); // Libera los recursos del controlador
-      super.dispose(); // Llama al método dispose del padre
-    }
-  }*/
-
   //Aqui ira el build de la card que se mostrara para editar al usuario
   @override
   Widget build(BuildContext context) {
@@ -480,7 +472,7 @@ class Vistaprofile extends StatelessWidget {
                 //--------------------------- Expanded permite que el texto ocupe el espacio restante
                 Expanded(
                   child: Column(
-                    // Columna para el nombre y los árboles
+                    // Columna para el nombre y recetas
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
@@ -494,15 +486,15 @@ class Vistaprofile extends StatelessWidget {
                       Row(
                         children: <Widget>[
                           const Icon(
-                            Icons.forest,
+                            Icons.fastfood,
                             size: 16,
-                            color: Colors.green,
+                            color: Color.fromARGB(255, 238, 205, 17),
                           ),
                           const SizedBox(width: 4),
                           const Text(
-                            '123 árboles',
+                            '123 Recetas',
                             style: TextStyle(fontSize: 14),
-                          ), // Reemplaza con el número de árboles),
+                          ), // Reemplaza con el número de recetas),
                         ],
                       ),
                     ],
