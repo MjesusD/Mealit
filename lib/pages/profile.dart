@@ -301,7 +301,7 @@ class Vistaprofile extends StatelessWidget {
   });
 
   void _showAccountSettings(BuildContext context) {
-    // Aquí puedes implementar la lógica para mostrar la configuración de la cuenta
+    // Logica para la administracion de detalles de la cuenta
     showDialog(
       context: context,
       builder: (context) {
@@ -511,11 +511,18 @@ class Vistaprofile extends StatelessWidget {
                 //aqui debe ir otro padding para el icono de la camara y la linea
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Icon(
+                  /*child: Icon(                                                       // aqui poner que se pueda cerrar la app al presionar el boton
                     Icons.exit_to_app,
                     size: 32,
                     color: Color.fromARGB(255, 197, 1, 1),
-                  ),
+                  ),*/
+                  child: IconButton(onPressed: (){
+                    SystemNavigator.pop();
+                  }, icon:Icon(
+                      Icons.exit_to_app,
+                      size: 32,
+                      color: Color.fromARGB(255, 197, 1, 1),
+                      ),), 
                 ),
                 const Expanded(child: Divider(thickness: 1)),
               ],

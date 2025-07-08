@@ -1,3 +1,4 @@
+import 'package:Mealit/entidades/persistent.dart';
 import 'package:Mealit/themes/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -9,10 +10,11 @@ import 'entidades/profile_notifier.dart';
 
 final logger = Logger();
 
-void main() {
+void main() async {
   // Configuración inicial de logger
   logger.i('La app MealIt se está iniciando');
-
+  WidgetsFlutterBinding.ensureInitialized(); // Necesario para async en main()
+  await UserPreferences.init(); // ¡Carga los datos del pueblo!
   runApp(
     MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => ProfileNotifier())],
