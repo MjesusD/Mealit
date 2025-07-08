@@ -50,6 +50,7 @@ dependencies:
   path: ^1.9.1
   hive_flutter: ^1.1.0
   sqflite: ^2.4.2
+  flutter_launcher_icons: ^0.14.4
 
 dev_dependencies:
   flutter_test:
@@ -101,3 +102,16 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+flutter_launcher_icons:
+ android: "ic_launcher" 
+ ios: true 
+ remove_alpha_ios: true 
+ #adaptive_icon_background: "#42a5f5" 
+ #adaptive_icon_foreground: "assets/pictures/IconoApp2.png" 
+ #android_icon: "assets/pictures/IconoApp2.png" 
+ #ios_icon: "assets/pictures/IconoApp2.png" 
+ #web_icon: "assets/pictures/IconoApp2.png" 
+ #windows_icon: "assets/pictures/IconoApp2.png" 
+ #image_path: assets/pictures/IconoApp2.png
+ PNG: true 
+ min_sdk_android: 21 

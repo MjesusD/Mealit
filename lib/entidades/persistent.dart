@@ -22,9 +22,9 @@ class UserPreferences {
         storedType != null
             ? UserType.values.firstWhere(
               (e) => e.toString() == storedType,
-              orElse: () => UserType.comprador,
+              orElse: () => UserType.visitante,
             )
-            : UserType.comprador;
+            : UserType.visitante;
     _nombreUsuario = prefs.getString('username') ?? 'Camarada Anónimo';
     _profileImagePath = prefs.getString('profileImagePath');
     _backgroundColor = Color(
@@ -65,7 +65,7 @@ class UserPreferences {
   static Future<void> clearPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
-    _userType = UserType.comprador; // Reiniciar al tipo de usuario por defecto
+    _userType = UserType.visitante; // Reiniciar al tipo de usuario por defecto
     _nombreUsuario =
         'Cocinero Anónimo'; // Reiniciar el nombre de usuario por defecto
     _profileImagePath = null; // Limpiar la ruta de la imagen de perfil

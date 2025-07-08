@@ -18,18 +18,18 @@ class ProfilePage extends StatefulWidget {
 
 // Enum definition
 enum UserType {
-  productorVendedor,
-  soloProductor,
-  comprador;
+  chef,
+  cocinero,
+  visitante;
 
-  String get displayName {
+  String get displayName { //cambiar a cocinero, visitante, chef
     switch (this) {
-      case UserType.productorVendedor:
-        return 'Productor Vendedor';
-      case UserType.soloProductor:
-        return 'Solo Productor';
-      case UserType.comprador:
-        return 'Comprador';
+      case UserType.chef:
+        return 'Chefsito';
+      case UserType.cocinero:
+        return 'Cocinero Entusiasta';
+      case UserType.visitante:
+        return 'Visitante';
     }
   }
 }
@@ -40,7 +40,7 @@ class ProfilePageState extends State<ProfilePage> {
   File? profileImage;
   //final String title;
   late String username; // Nombre de usuario por defecto
-  late UserType userType = UserType.comprador; // Tipo de usuario por defecto
+  late UserType userType = UserType.visitante; // Tipo de usuario por defecto
   final TextEditingController usernameController = TextEditingController();
   //funcion para seleccionar una imagen del perfil
 
@@ -238,7 +238,7 @@ class ProfilePageState extends State<ProfilePage> {
                     type.displayName ==
                     usernameController
                         .text, // Compara el displayName del UserType con el texto del controlador
-                orElse: () => UserType.comprador,
+                orElse: () => UserType.visitante,
               );
               setState(() {
                 // Actualiza el tipo de usuario

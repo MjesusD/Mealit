@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/meal_model.dart';
+import '../entidades/menu_lateral.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, required this.title});
@@ -43,6 +44,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: obtenerMenuLateral(context),
       appBar: AppBar(title: const Text('MealIt - Comida del Día')),
       body: Center(
         child: isLoading
