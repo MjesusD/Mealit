@@ -33,7 +33,7 @@ Drawer obtenerMenuLateral(BuildContext context) {
             decoration: BoxDecoration(
               image: DecorationImage(
                 image: NetworkImage(
-                  'https://www.reforestemos.org/content/uploads/bosque-nativo-araucaria-2.jpg',
+                  'https://www.lazayafruits.com/es/wp-content/uploads/sites/2/2020/08/nuevas-tendencias-en-pasteleria-industrial-1.jpg',
                 ),
                 fit: BoxFit.cover,
               ),
@@ -80,7 +80,7 @@ Drawer obtenerMenuLateral(BuildContext context) {
 
         ListTile(
           // de aqui en adelante son los elementos del menu lateral
-          leading: const Icon(Icons.home_work_outlined),
+          leading: const Icon(Icons.food_bank_outlined),
           title: const Text('Inicio'),
           onTap: () {
             // Actualiza el estado de la aplicación
@@ -105,8 +105,8 @@ Drawer obtenerMenuLateral(BuildContext context) {
           },
         ),
         ListTile(
-          leading: const Icon(Icons.store),
-          title: const Text('Mercado'),
+          leading: const Icon(Icons.favorite),
+          title: const Text('Favoritos'),
           onTap: () {
             // Update the state of the app
             // _onItemTapped(2);//------------------------------------------------------poner navegator push

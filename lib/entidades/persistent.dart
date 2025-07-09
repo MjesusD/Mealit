@@ -25,10 +25,10 @@ class UserPreferences {
               orElse: () => UserType.visitante,
             )
             : UserType.visitante;
-    _nombreUsuario = prefs.getString('username') ?? 'Camarada Anónimo';
+    _nombreUsuario = prefs.getString('username') ?? 'Cocinero Anónimo';
     _profileImagePath = prefs.getString('profileImagePath');
     _backgroundColor = Color(
-      prefs.getInt('backgroundColor') ?? 0xFFF5F5F5,
+      prefs.getInt('backgroundColor') ?? 0xFF2A1980,
     ); // Color por defecto claro
     _fontSizeFactor = prefs.getDouble('fontSizeFactor') ?? 1.0;
     _isProfileImageRound = prefs.getBool('isProfileImageRound') ?? true;
