@@ -1,3 +1,4 @@
+import 'package:Mealit/models/meal_model.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../pages/profile.dart';
@@ -115,6 +116,36 @@ class UserPreferences {
   static bool isProfileImageRound() {
     return _isProfileImageRound;
   }
+
+  //Aspectos para la persistencia de favoritos
+  static Future<void> saveFavorite(Meal meal) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('fav_${meal.idMeal}', jsonEncode(meal.toJson()));
+  }
+  static Future<void> removeFavoriteMeal(String mealId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('fav_$mealId');
+  }
+  
+  static Future<List<Meal>> getFavoriteMeals() async {
+    final prefs = await SharedPreferences.getInstance();
+    final keys = prefs.getKeys().where((key) => key.startsWith('fav_')).toList();
+    
+    List<Meal> favorites = [];
+    for (var key in keys) {
+      final mealJson = prefs.getString(key);
+      if (mealJson != null) {
+        try {
+          favorites.add(Meal.fromJson(json.decode(mealJson)));
+        } catch (e) {
+          debugPrint('Error parsing favorite meal: $e');
+        }
+      }
+    }
+    return favorites;
+  }
+
+
 }
 
 class ImageStorageService {
