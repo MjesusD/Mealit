@@ -23,7 +23,12 @@ class _ProfilePageState extends State<ProfilePage> {
   final GlobalKey<MyLibraryPageState> _libraryKey = GlobalKey();
   final int _drawerSelectedIndex = 1;
 
-  static const List<String> _routes = ['/', '/profile', '/preferences', '/favorites'];
+  static const List<String> _routes = [
+    '/home',
+    '/profile',
+    '/preferences',
+    '/favorites',
+  ];
 
   @override
   void initState() {
@@ -37,7 +42,6 @@ class _ProfilePageState extends State<ProfilePage> {
     if (!mounted) return;
 
     if (loadedProfile == null) {
-      // Redirigir al formulario de creación de perfil si no existe aún
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -72,8 +76,9 @@ class _ProfilePageState extends State<ProfilePage> {
       return;
     }
 
-    final targetRoute = _routes[index];
     Navigator.pop(context);
+
+    final targetRoute = _routes[index];
 
     if (ModalRoute.of(context)?.settings.name == targetRoute) return;
 
@@ -83,11 +88,35 @@ class _ProfilePageState extends State<ProfilePage> {
         await _loadUserProfile();
       }
     } else {
-      Navigator.pushNamed(context, targetRoute);
+      if (Navigator.of(context).canPop()) {
+        Navigator.pushReplacementNamed(context, targetRoute);
+      } else {
+        Navigator.pushNamed(context, targetRoute);
+      }
     }
   }
 
-  void _onInternalTabTapped(int index) {
+  void _onInternalTabTapped(int index) async {
+    if (index == 2) {
+      // Abrir CreateRecipePage como nueva ruta
+      final newRecipe = await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => CreateRecipePage()),
+      );
+      if (newRecipe != null) {
+        // Después de crear receta, cambia a tab biblioteca y recarga
+        setState(() {
+          _internalTabIndex = 1;
+        });
+        _libraryKey.currentState?.reloadRecipes();
+        if (!mounted) return; 
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Receta creada correctamente')),
+        );
+      }
+      return;
+    }
+
     setState(() {
       _internalTabIndex = index;
       if (index == 1) {
@@ -122,8 +151,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return Scaffold(
       drawer: MainDrawer(
-        onSelectPage: _onSelectPage,
         selectedIndex: _drawerSelectedIndex,
+        onSelectPage: _onSelectPage,
       ),
       appBar: AppBar(
         title: Text(widget.title, style: TextStyle(color: colorScheme.onPrimary)),
@@ -149,14 +178,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     _libraryKey.currentState?.reloadRecipes();
                   },
                 ),
-                CreateRecipePage(
-                  onSave: (newRecipe) {
-                    setState(() {
-                      _internalTabIndex = 1;
-                    });
-                    _libraryKey.currentState?.reloadRecipes();
-                  },
-                ),
+                // No CreateRecipePage aquí para evitar pantalla negra
+                Container(), // Placeholder vacío
               ],
             ),
       bottomNavigationBar: BottomNavigationBar(

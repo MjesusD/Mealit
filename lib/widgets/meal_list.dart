@@ -4,11 +4,15 @@ import 'package:mealit/entity/meal_model.dart';
 class MealListWidget extends StatelessWidget {
   final List<Meal> meals;
   final void Function(Meal meal)? onMealTap;
+  final Set<String> favoriteMealIds;
+  final void Function(Meal meal) onToggleFavorite;
 
   const MealListWidget({
     super.key,
     required this.meals,
     this.onMealTap,
+    required this.favoriteMealIds,
+    required this.onToggleFavorite,
   });
 
   @override
@@ -18,6 +22,8 @@ class MealListWidget extends StatelessWidget {
       separatorBuilder: (_, __) => const Divider(),
       itemBuilder: (context, index) {
         final meal = meals[index];
+        final isFavorite = favoriteMealIds.contains(meal.idMeal);
+
         return GestureDetector(
           onTap: () => onMealTap?.call(meal),
           child: ListTile(
@@ -31,6 +37,13 @@ class MealListWidget extends StatelessWidget {
               ),
             ),
             title: Text(meal.name),
+            trailing: IconButton(
+              icon: Icon(
+                isFavorite ? Icons.favorite : Icons.favorite_border,
+                color: isFavorite ? Colors.red : null,
+              ),
+              onPressed: () => onToggleFavorite(meal),
+            ),
           ),
         );
       },

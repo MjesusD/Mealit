@@ -16,12 +16,10 @@ class EditProfilePage extends StatefulWidget {
 class _EditProfilePageState extends State<EditProfilePage> {
   late TextEditingController _nameController;
   late TextEditingController _ageController;
-  late TextEditingController _bioController;
   late TextEditingController _heightController;
   late TextEditingController _weightController;
 
-  String? _profileImagePath; // ruta local de la imagen
-
+  String? _profileImagePath;
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -30,7 +28,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final p = widget.profile;
     _nameController = TextEditingController(text: p.name);
     _ageController = TextEditingController(text: p.age.toString());
-    _bioController = TextEditingController(text: p.bio);
     _heightController = TextEditingController(text: p.heightCm.toString());
     _weightController = TextEditingController(text: p.weightKg.toString());
     _profileImagePath = p.profileImage.isNotEmpty ? p.profileImage : null;
@@ -40,7 +37,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
   void dispose() {
     _nameController.dispose();
     _ageController.dispose();
-    _bioController.dispose();
     _heightController.dispose();
     _weightController.dispose();
     super.dispose();
@@ -59,11 +55,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final updatedProfile = widget.profile.copyWith(
       name: _nameController.text.trim(),
       age: int.tryParse(_ageController.text.trim()) ?? widget.profile.age,
-      bio: _bioController.text.trim(),
       heightCm: double.tryParse(_heightController.text.trim()) ?? widget.profile.heightCm,
       weightKg: double.tryParse(_weightController.text.trim()) ?? widget.profile.weightKg,
       profileImage: _profileImagePath ?? '',
-      // No se toca dietaryHabits aquí porque se maneja desde Preferencias
     );
 
     await UserProfileStorage.save(updatedProfile);
@@ -139,11 +133,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
               controller: _ageController,
               decoration: const InputDecoration(labelText: 'Edad'),
               keyboardType: TextInputType.number,
-            ),
-            TextField(
-              controller: _bioController,
-              decoration: const InputDecoration(labelText: 'Biografía'),
-              maxLines: 3,
             ),
             TextField(
               controller: _heightController,

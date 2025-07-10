@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
 class MainDrawer extends StatelessWidget {
-  final Function(int) onSelectPage;
   final int selectedIndex;
+  final void Function(int) onSelectPage;
 
   const MainDrawer({
     super.key,
-    required this.onSelectPage,
     required this.selectedIndex,
+    required this.onSelectPage,
   });
 
   @override
@@ -84,8 +84,7 @@ class MainDrawer extends StatelessWidget {
       selected: isSelected,
       selectedTileColor: colorScheme.surfaceContainerHigh,
       onTap: () {
-        Navigator.pop(context); // Cierra el drawer
-
+        Navigator.pop(context); // cierra drawer
         if (!isSelected) {
           onSelectPage(index);
         }

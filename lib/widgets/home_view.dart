@@ -27,6 +27,9 @@ class HomeView extends StatelessWidget {
   final void Function(String) onLetterSelected;
   final String selectedLetter;
 
+  final Set<String> favoriteMealIds;
+ final void Function(Meal meal) onToggleFavorite;
+
   const HomeView({
     super.key,
     required this.recommendedMeal,
@@ -48,6 +51,8 @@ class HomeView extends StatelessWidget {
     required this.onLetterSelected,
     required this.selectedLetter,
     required this.hasSearched,
+    required this.favoriteMealIds,
+    required this.onToggleFavorite,
   });
 
   @override
@@ -255,7 +260,12 @@ class HomeView extends StatelessWidget {
                       style: textTheme.bodyLarge,
                     ),
                   )
-                : MealListWidget(meals: meals, onMealTap: onMealTap),
+                : MealListWidget(
+                    meals: meals,
+                    onMealTap: onMealTap,
+                    favoriteMealIds: favoriteMealIds,
+                    onToggleFavorite: onToggleFavorite,
+                  ),
           ),
         ],
       ),

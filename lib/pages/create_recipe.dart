@@ -6,9 +6,8 @@ import 'package:mealit/models/recipe_storage.dart';
 
 class CreateRecipePage extends StatefulWidget {
   final Recipe? initialRecipe;
-  final void Function(Recipe recipe)? onSave;
 
-  const CreateRecipePage({super.key, this.initialRecipe, this.onSave});
+  const CreateRecipePage({super.key, this.initialRecipe});
 
   @override
   State<CreateRecipePage> createState() => _CreateRecipePageState();
@@ -20,8 +19,9 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
   late TextEditingController _descriptionController;
   late TextEditingController _stepsController;
   late TextEditingController _listNameController;
+  late TextEditingController _ingredientInputController;
+
   List<String> _ingredients = [];
-  String _newIngredient = '';
   String _imagePath = '';
   bool _isEditing = false;
 
@@ -36,26 +36,50 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
     _descriptionController = TextEditingController(text: r?.description ?? '');
     _stepsController = TextEditingController(text: r?.steps ?? '');
     _listNameController = TextEditingController(text: r?.listName ?? '');
+    _ingredientInputController = TextEditingController();
     _ingredients = List<String>.from(r?.ingredients ?? []);
     _imagePath = r?.imagePath ?? '';
   }
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _stepsController.dispose();
+    _listNameController.dispose();
+    _ingredientInputController.dispose();
+    super.dispose();
+  }
+
   Future<void> _pickImage(ImageSource source) async {
-    final picked = await _picker.pickImage(source: source, maxWidth: 600, maxHeight: 600);
-    if (picked != null) {
-      setState(() {
-        _imagePath = picked.path;
-      });
+    try {
+      final picked = await _picker.pickImage(source: source, maxWidth: 600, maxHeight: 600);
+      if (picked != null) {
+        if (!mounted) return;
+        setState(() {
+          _imagePath = picked.path;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al seleccionar imagen: $e')),
+      );
     }
   }
 
   void _addIngredient() {
-    final trimmed = _newIngredient.trim();
-    if (trimmed.isNotEmpty) {
+    final trimmed = _ingredientInputController.text.trim();
+    if (trimmed.isNotEmpty && !_ingredients.contains(trimmed)) {
       setState(() {
         _ingredients.add(trimmed);
-        _newIngredient = '';
+        _ingredientInputController.clear();
       });
+    } else if (_ingredients.contains(trimmed)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ingrediente ya agregado')),
+      );
     }
   }
 
@@ -67,12 +91,14 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
 
   Future<void> _saveRecipe() async {
     if (!_formKey.currentState!.validate()) return;
+
     if (_ingredients.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Agrega al menos un ingrediente')),
       );
       return;
     }
+
     if (_imagePath.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Agrega una imagen a la receta')),
@@ -87,15 +113,17 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
       steps: _stepsController.text.trim(),
       ingredients: _ingredients,
       imagePath: _imagePath,
-      listName: _listNameController.text.trim().isEmpty
-          ? 'General'
-          : _listNameController.text.trim(),
+      listName: _listNameController.text.trim().isEmpty ? 'General' : _listNameController.text.trim(),
     );
 
     await RecipeStorage.addOrUpdateRecipe(recipe);
 
-    if (widget.onSave != null) widget.onSave!(recipe);
     if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(_isEditing ? 'Receta actualizada' : 'Receta creada')),
+    );
+
     Navigator.of(context).pop(recipe);
   }
 
@@ -115,38 +143,31 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Nombre
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Nombre'),
                 validator: (v) => v == null || v.trim().isEmpty ? 'Requerido' : null,
               ),
               const SizedBox(height: 12),
-
-              // Descripción
               TextFormField(
                 controller: _descriptionController,
                 decoration: const InputDecoration(labelText: 'Descripción'),
                 maxLines: 2,
               ),
               const SizedBox(height: 12),
-
-              // Categoría / Lista
               TextFormField(
                 controller: _listNameController,
                 decoration: const InputDecoration(labelText: 'Categoría (Lista)'),
               ),
               const SizedBox(height: 12),
-
-              // Ingredientes
               Text('Ingredientes', style: theme.textTheme.titleMedium),
               const SizedBox(height: 6),
               Row(
                 children: [
                   Expanded(
                     child: TextField(
+                      controller: _ingredientInputController,
                       decoration: const InputDecoration(hintText: 'Agregar ingrediente'),
-                      onChanged: (v) => _newIngredient = v,
                       onSubmitted: (_) => _addIngredient(),
                     ),
                   ),
@@ -168,8 +189,6 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
                 }),
               ),
               const SizedBox(height: 12),
-
-              // Pasos
               TextFormField(
                 controller: _stepsController,
                 decoration: const InputDecoration(labelText: 'Pasos'),
@@ -177,8 +196,6 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
                 validator: (v) => v == null || v.trim().isEmpty ? 'Requerido' : null,
               ),
               const SizedBox(height: 12),
-
-              // Imagen
               Text('Imagen', style: theme.textTheme.titleMedium),
               const SizedBox(height: 6),
               if (_imagePath.isNotEmpty)
@@ -202,8 +219,6 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
                 ],
               ),
               const SizedBox(height: 20),
-
-              // Botón guardar
               ElevatedButton(
                 onPressed: _saveRecipe,
                 child: Text(_isEditing ? 'Guardar cambios' : 'Crear receta'),

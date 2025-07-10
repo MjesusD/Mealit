@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mealit/services/api_service.dart';
 import 'package:mealit/entity/meal_model.dart';
 import 'package:mealit/widgets/meal_list.dart';
@@ -24,10 +25,13 @@ class _FilterExplorerPageState extends State<FilterExplorerPage> {
   List<Meal> meals = [];
   bool isLoading = false;
 
+  Set<String> favoriteMealIds = {};
+
   @override
   void initState() {
     super.initState();
     loadFilters();
+    loadFavoriteMeals();
   }
 
   Future<void> loadFilters() async {
@@ -42,34 +46,63 @@ class _FilterExplorerPageState extends State<FilterExplorerPage> {
     });
   }
 
-  Future<void> applyFilters() async {
+  Future<void> loadFavoriteMeals() async {
+    final prefs = await SharedPreferences.getInstance();
+    final favIds = prefs.getStringList('favoriteMealIds') ?? [];
     setState(() {
-      isLoading = true;
-      meals = [];
-    });
-
-    List<dynamic>? results;
-
-    if (selectedCategory != null) {
-      results = await apiService.filterByCategory(selectedCategory!);
-    } else if (selectedArea != null) {
-      results = await apiService.filterByArea(selectedArea!);
-    } else if (selectedIngredient != null) {
-      results = await apiService.filterByIngredient(selectedIngredient!);
-    }
-
-    if (results != null) {
-      setState(() {
-        meals = (results ?? []).map((json) => Meal.fromJson(json)).toList();
-      });
-    }
-
-    setState(() {
-      isLoading = false;
+      favoriteMealIds = favIds.toSet();
     });
   }
 
-  Widget buildDropdown(String label, List<String> items, String? selectedValue, Function(String?) onChanged) {
+  Future<void> saveFavoriteMeals() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('favoriteMealIds', favoriteMealIds.toList());
+  }
+
+  void onToggleFavorite(Meal meal) {
+    setState(() {
+      if (favoriteMealIds.contains(meal.idMeal)) {
+        favoriteMealIds.remove(meal.idMeal);
+      } else {
+        favoriteMealIds.add(meal.idMeal);
+      }
+    });
+    saveFavoriteMeals();
+  }
+
+  Future<void> applyFilters() async {
+  setState(() {
+    isLoading = true;
+    meals = [];
+  });
+
+  List<dynamic>? results;
+
+  if (selectedCategory != null) {
+    results = await apiService.filterByCategory(selectedCategory!);
+  } else if (selectedArea != null) {
+    results = await apiService.filterByArea(selectedArea!);
+  } else if (selectedIngredient != null) {
+    results = await apiService.filterByIngredient(selectedIngredient!);
+  }
+
+  setState(() {
+    if (results != null) {
+      meals = results.map((json) => Meal.fromJson(json)).toList();
+    } else {
+      meals = [];
+    }
+    isLoading = false;
+  });
+}
+
+
+  Widget buildDropdown(
+    String label,
+    List<String> items,
+    String? selectedValue,
+    Function(String?) onChanged,
+  ) {
     return DropdownButtonFormField<String>(
       decoration: InputDecoration(labelText: label),
       value: selectedValue,
@@ -86,11 +119,29 @@ class _FilterExplorerPageState extends State<FilterExplorerPage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            buildDropdown('Categoría', categories, selectedCategory, (val) => setState(() => selectedCategory = val)),
+            buildDropdown('Categoría', categories, selectedCategory, (val) {
+              setState(() {
+                selectedCategory = val;
+                selectedArea = null;
+                selectedIngredient = null;
+              });
+            }),
             const SizedBox(height: 12),
-            buildDropdown('Área', areas, selectedArea, (val) => setState(() => selectedArea = val)),
+            buildDropdown('Área', areas, selectedArea, (val) {
+              setState(() {
+                selectedArea = val;
+                selectedCategory = null;
+                selectedIngredient = null;
+              });
+            }),
             const SizedBox(height: 12),
-            buildDropdown('Ingrediente', ingredients, selectedIngredient, (val) => setState(() => selectedIngredient = val)),
+            buildDropdown('Ingrediente', ingredients, selectedIngredient, (val) {
+              setState(() {
+                selectedIngredient = val;
+                selectedCategory = null;
+                selectedArea = null;
+              });
+            }),
             const SizedBox(height: 20),
             ElevatedButton.icon(
               icon: const Icon(Icons.search),
@@ -98,12 +149,20 @@ class _FilterExplorerPageState extends State<FilterExplorerPage> {
               onPressed: applyFilters,
             ),
             const SizedBox(height: 20),
-            if (isLoading)
-              const CircularProgressIndicator()
-            else if (meals.isEmpty)
-              const Text('No hay resultados')
-            else
-              Expanded(child: MealListWidget(meals: meals)),
+            Expanded(
+              child: isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : meals.isEmpty
+                      ? const Center(child: Text('No hay resultados'))
+                      : MealListWidget(
+                          meals: meals,
+                          favoriteMealIds: favoriteMealIds,
+                          onToggleFavorite: onToggleFavorite,
+                          onMealTap: (meal) {
+                            // Puedes implementar vista detallada si quieres
+                          },
+                        ),
+            ),
           ],
         ),
       ),

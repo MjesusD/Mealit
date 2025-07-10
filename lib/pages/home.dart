@@ -42,23 +42,49 @@ class _HomePageState extends State<HomePage> {
   bool isListening = false;
 
   int _selectedIndex = 0;
-  static const List<String> _routes = ['/', '/profile', '/preferences', '/favorites'];
+  static const List<String> _routes = ['/home', '/profile', '/preferences', '/favorites'];
 
   static const _prefKeyRecommendedMeal = 'recommended_meal';
   static const _prefKeyRecommendedDate = 'recommended_date';
+
+  Set<String> favoriteMealIds = {};
 
   @override
   void initState() {
     super.initState();
     speech = stt.SpeechToText();
+    loadFavoriteMeals();
     loadRecommendedMeal();
     loadDropdownData();
 
-    // Cargar recetas con letra 'a' al iniciar si está en modo búsqueda por nombre
     if (searchType == 'name') {
       Future.microtask(() => searchByLetter(selectedLetter));
     }
   }
+
+  Future<void> loadFavoriteMeals() async {
+    final prefs = await SharedPreferences.getInstance();
+    final favIds = prefs.getStringList('favoriteMealIds') ?? [];
+    setState(() {
+      favoriteMealIds = favIds.toSet();
+    });
+  }
+
+  Future<void> saveFavoriteMeals() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('favoriteMealIds', favoriteMealIds.toList());
+  }
+
+void toggleFavorite(Meal meal) {
+  setState(() {
+    if (favoriteMealIds.contains(meal.idMeal)) {
+      favoriteMealIds.remove(meal.idMeal);
+    } else {
+      favoriteMealIds.add(meal.idMeal);
+    }
+  });
+  saveFavoriteMeals();
+}
 
   Future<void> loadRecommendedMeal() async {
     final prefs = await SharedPreferences.getInstance();
@@ -140,7 +166,6 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> search(String query) async {
     if (searchType == 'name' && query.isEmpty) {
-      // Cuando está vacio el texto y modo nombre, mostramos recetas por letra seleccionada
       await searchByLetter(selectedLetter);
       return;
     }
@@ -254,10 +279,18 @@ class _HomePageState extends State<HomePage> {
       Navigator.pop(context);
       return;
     }
+
+    Navigator.pop(context); // Cierra el drawer
+
     setState(() {
       _selectedIndex = index;
     });
-    Navigator.popAndPushNamed(context, _routes[index]);
+
+    if (index == 0) {
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      Navigator.pushNamed(context, _routes[index]);
+    }
   }
 
   void _listen() async {
@@ -304,8 +337,8 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: MainDrawer(
-        onSelectPage: _onSelectPage,
         selectedIndex: _selectedIndex,
+        onSelectPage: _onSelectPage,
       ),
       appBar: AppBar(
         title: const Text('MealIt'),
@@ -368,6 +401,9 @@ class _HomePageState extends State<HomePage> {
         },
         selectedLetter: selectedLetter,
         hasSearched: hasSearched,
+
+        favoriteMealIds: favoriteMealIds,
+        onToggleFavorite: toggleFavorite,
       ),
     );
   }

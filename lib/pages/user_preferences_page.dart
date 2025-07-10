@@ -26,7 +26,9 @@ class _PreferencesPageState extends State<PreferencesPage> {
   final TextEditingController _habitController = TextEditingController();
   List<String> _dietaryHabitsList = [];
 
-  static const List<String> _routes = ['/', '/profile', '/preferences', '/favorites'];
+  // Drawer selected index
+  final int _drawerSelectedIndex = 2;
+  static const List<String> _routes = ['/home', '/profile', '/preferences', '/favorites'];
 
   @override
   void initState() {
@@ -52,7 +54,8 @@ class _PreferencesPageState extends State<PreferencesPage> {
         );
 
     _selectedPrefs = {
-      for (var key in _availablePreferences.keys) key: profile.dietaryPreferences.contains(key),
+      for (var key in _availablePreferences.keys)
+        key: profile.dietaryPreferences.contains(key),
     };
 
     _dietaryHabitsList = profile.dietaryHabits.isEmpty
@@ -67,7 +70,8 @@ class _PreferencesPageState extends State<PreferencesPage> {
 
   Future<void> _savePreferences() async {
     final updatedProfile = profile.copyWith(
-      dietaryPreferences: _selectedPrefs.entries.where((e) => e.value).map((e) => e.key).toList(),
+      dietaryPreferences:
+          _selectedPrefs.entries.where((e) => e.value).map((e) => e.key).toList(),
       dietaryHabits: _dietaryHabitsList.join(', '),
     );
 
@@ -112,31 +116,34 @@ class _PreferencesPageState extends State<PreferencesPage> {
     _savePreferences();
   }
 
-  void _onSelectPage(int index) {
-    if (index == 2) {
-      Navigator.pop(context);
-      return;
-    }
-
-    Navigator.pop(context);
-
-    final targetRoute = _routes[index];
-
-    if (ModalRoute.of(context)?.settings.name == targetRoute) {
-      return;
-    }
-
-    if (Navigator.canPop(context)) {
-      Navigator.popAndPushNamed(context, targetRoute);
-    } else {
-      Navigator.pushNamed(context, targetRoute);
-    }
-  }
-
   Future<bool> _onWillPop() async {
-    // No alerta porque se guardan automáticamente
+    // Guardado automático, sin alerta al salir
     return true;
   }
+
+  void _onSelectPage(int index) {
+  if (index == _drawerSelectedIndex) {
+    Navigator.pop(context);
+    return;
+  }
+
+  Navigator.pop(context);
+
+  final targetRoute = _routes[index];
+
+  if (ModalRoute.of(context)?.settings.name == targetRoute) {
+    // Ya estamos en la ruta, no navegamos
+    return;
+  }
+
+  if (Navigator.of(context).canPop()) {
+  Navigator.pushReplacementNamed(context, targetRoute);
+} else {
+  Navigator.pushNamed(context, targetRoute);
+}
+
+
+}
 
   @override
   Widget build(BuildContext context) {
@@ -149,15 +156,20 @@ class _PreferencesPageState extends State<PreferencesPage> {
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        drawer: MainDrawer(onSelectPage: _onSelectPage, selectedIndex: 2),
+        drawer: MainDrawer(
+          selectedIndex: _drawerSelectedIndex,
+          onSelectPage: _onSelectPage,
+        ),
         appBar: AppBar(title: const Text('Preferencias')),
         body: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Elige tus preferencias alimenticias',
-                  style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                'Elige tus preferencias alimenticias',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 12),
               Expanded(
                 child: ListView(
@@ -167,15 +179,18 @@ class _PreferencesPageState extends State<PreferencesPage> {
                       final label = entry.value['label'] as String;
                       final icon = entry.value['icon'] as IconData;
                       return CheckboxListTile(
-                        secondary: Icon(icon, color: Theme.of(context).colorScheme.primary),
+                        secondary:
+                            Icon(icon, color: Theme.of(context).colorScheme.primary),
                         title: Text(label),
                         value: _selectedPrefs[key] ?? false,
                         onChanged: (val) => _onPreferenceChanged(key, val),
                       );
                     }),
                     const Divider(height: 40),
-                    Text('Añade tus hábitos alimenticios',
-                        style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      'Añade tus hábitos alimenticios',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 6,
@@ -198,7 +213,8 @@ class _PreferencesPageState extends State<PreferencesPage> {
                               hintText: 'Añadir nuevo hábito',
                               border: OutlineInputBorder(),
                               isDense: true,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              contentPadding:
+                                  EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                             ),
                             onSubmitted: _addHabit,
                           ),
