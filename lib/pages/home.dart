@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:mealit/entity/meal_model.dart';
 import 'package:mealit/services/api_service.dart';
-import 'package:mealit/models/meal_model.dart';
+import 'package:mealit/widgets/meal_detail.dart';
+import '../widgets/drawer.dart';
+import '../widgets/meal_list.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,70 +14,332 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final ApiService apiService = ApiService();
-  Meal? meal;
+  final TextEditingController _searchController = TextEditingController();
+
+  List<Meal> meals = [];
+  Meal? recommendedMeal;
   bool isLoading = false;
   String? error;
+  String searchType = 'name';
+
+  List<String> categories = [];
+  List<String> areas = [];
+  List<String> ingredients = [];
+  String? selectedFilterValue;
+
+  int _selectedIndex = 0;
+  static const List<String> _routes = ['/', '/profile', '/preferences', '/favorites'];
 
   @override
   void initState() {
     super.initState();
-    loadMeal();
+    loadRecommendedMeal();
+    loadDropdownData();
   }
 
-  Future<void> loadMeal() async {
-    setState(() {
-      isLoading = true;
-      error = null;
-    });
+  Future<void> loadRecommendedMeal() async {
+    if (!mounted) return;
+    setState(() => isLoading = true);
+
     final data = await apiService.fetchRandomMeal();
+
+    if (!mounted) return;
     if (data != null) {
       setState(() {
-        meal = Meal.fromJson(data);
+        recommendedMeal = Meal.fromJson(data);
         isLoading = false;
       });
     } else {
       setState(() {
-        error = 'Error al cargar la comida.';
+        error = 'No se pudo cargar la comida recomendada';
         isLoading = false;
       });
     }
   }
 
+  Future<void> loadDropdownData() async {
+    final fetchedCategories = await apiService.getAllCategories();
+    final fetchedAreas = await apiService.getAllAreas();
+    final fetchedIngredients = await apiService.getAllIngredients();
+
+    if (!mounted) return;
+    setState(() {
+      categories = fetchedCategories;
+      areas = fetchedAreas;
+      ingredients = fetchedIngredients;
+    });
+  }
+
+  Future<void> search(String query) async {
+    if (query.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        meals = [];
+        error = null;
+      });
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() {
+      isLoading = true;
+      error = null;
+    });
+
+    List<dynamic>? results;
+    switch (searchType) {
+      case 'ingredient':
+        results = await apiService.filterByIngredient(query);
+        break;
+      case 'area':
+        results = await apiService.filterByArea(query);
+        break;
+      case 'category':
+        results = await apiService.filterByCategory(query);
+        break;
+      default:
+        results = await apiService.searchMealsByName(query);
+    }
+
+    if (!mounted) return;
+    setState(() {
+      if (results == null || results.isEmpty) {
+        meals = [];
+        error = 'No se encontraron resultados';
+      } else {
+        meals = results.map<Meal>((json) => Meal.fromJson(json)).toList();
+        error = null;
+      }
+      isLoading = false;
+    });
+  }
+
+  Future<void> _showMealDetail(Meal meal) async {
+    final data = await apiService.fetchMealById(meal.idMeal);
+    if (data != null && mounted) {
+      final fullMeal = Meal.fromJson(data);
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+        ),
+        builder: (_) => MealDetailView(meal: fullMeal),
+      );
+    }
+  }
+
+  void _onSelectPage(int index) {
+    if (index == _selectedIndex) {
+      Navigator.pop(context); // Cierra drawer si seleccionó la misma página
+      return;
+    }
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    Navigator.popAndPushNamed(context, _routes[index]);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('MealIt - Comida del Día')),
-      body: Center(
-        child: isLoading
-            ? const CircularProgressIndicator()
-            : error != null
-                ? Text(error!)
-                : meal == null
-                    ? const Text('No hay datos')
-                    : SingleChildScrollView(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Image.network(meal!.imageUrl),
-                            const SizedBox(height: 16),
-                            Text(meal!.name, style: Theme.of(context).textTheme.headlineSmall),
-                            const SizedBox(height: 12),
-                            const Text('Ingredientes:', style: TextStyle(fontWeight: FontWeight.bold)),
-                            ...meal!.ingredients.map((e) => Text('• $e')),
-                            const SizedBox(height: 12),
-                            const Text('Instrucciones:', style: TextStyle(fontWeight: FontWeight.bold)),
-                            Text(meal!.instructions),
-                            const SizedBox(height: 20),
-                            Center(
-                              child: ElevatedButton(
-                                onPressed: loadMeal,
-                                child: const Text('Otra comida'),
-                              ),
-                            ),
-                          ],
-                        ),
+      drawer: MainDrawer(
+        onSelectPage: _onSelectPage,
+        selectedIndex: _selectedIndex,
+      ),
+      appBar: AppBar(
+        title: const Text('MealIt'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          children: [
+            if (recommendedMeal != null)
+              Card(
+                elevation: 6,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                margin: const EdgeInsets.only(top: 16, bottom: 24),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => _showMealDetail(recommendedMeal!),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          colorScheme.primaryContainer,
+                          colorScheme.secondaryContainer,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            recommendedMeal!.imageUrl,
+                            width: 90,
+                            height: 90,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Comida del día',
+                                style: textTheme.titleMedium?.copyWith(
+                                  color: colorScheme.onPrimaryContainer,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                recommendedMeal!.name,
+                                style: textTheme.headlineSmall?.copyWith(
+                                  color: colorScheme.onPrimaryContainer,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 8),
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: colorScheme.primary,
+                                  foregroundColor: colorScheme.onPrimary,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                onPressed: loadRecommendedMeal,
+                                icon: const Icon(Icons.refresh),
+                                label: const Text('Nueva comida'),
+                              )
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: DropdownButtonFormField<String>(
+                value: searchType,
+                decoration: InputDecoration(
+                  labelText: 'Buscar por',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'name', child: Text('Nombre')),
+                  DropdownMenuItem(value: 'ingredient', child: Text('Ingrediente')),
+                  DropdownMenuItem(value: 'area', child: Text('Área')),
+                  DropdownMenuItem(value: 'category', child: Text('Categoría')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      searchType = value;
+                      selectedFilterValue = null;
+                      meals = [];
+                      _searchController.clear();
+                      error = null;
+                    });
+                  }
+                },
+              ),
+            ),
+
+            Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: TextField(
+                    controller: _searchController,
+                    onSubmitted: search,
+                    decoration: InputDecoration(
+                      hintText: searchType == 'name'
+                          ? 'Buscar por nombre...'
+                          : 'Buscador',
+                      prefixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: colorScheme.surfaceContainerHighest,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                    ),
+                    maxLines: 1,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: searchType == 'name'
+                      ? const SizedBox.shrink()
+                      : DropdownButtonFormField<String>(
+                          value: selectedFilterValue,
+                          isExpanded: true,
+                          hint: const Text('Selecciona una opción'),
+                          items: (searchType == 'ingredient'
+                                  ? ingredients
+                                  : searchType == 'area'
+                                      ? areas
+                                      : categories)
+                              .map((val) => DropdownMenuItem(value: val, child: Text(val)))
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                selectedFilterValue = val;
+                              });
+                              search(val);
+                            }
+                          },
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: colorScheme.surfaceContainerHighest,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          ),
+                        ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+
+            Expanded(
+              child: meals.isEmpty
+                  ? Center(
+                      child: Text(
+                        error ?? 'No se encontraron comidas.',
+                        style: textTheme.bodyLarge,
+                      ),
+                    )
+                  : MealListWidget(meals: meals, onMealTap: _showMealDetail),
+            ),
+          ],
+        ),
       ),
     );
   }

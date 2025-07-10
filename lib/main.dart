@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:mealit/pages/home.dart';
-import 'package:logger/logger.dart';
-
-final logger = Logger();
+import 'package:mealit/pages/profile_page.dart';
+import 'package:mealit/pages/user_preferences_page.dart';
+import 'package:mealit/pages/favorites.dart';
+import 'package:mealit/themes/theme.dart';
+import 'package:mealit/utils/util.dart';
 
 void main() {
-  // Configuración inicial de logger 
-  logger.i('La app MealIt se está iniciando');
-
   runApp(const MyApp());
 }
 
@@ -16,14 +15,20 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    logger.i('Construyendo MyApp widget');
+    final textTheme = createTextTheme(context, 'Roboto', 'Rubik');
+    final customTheme = MaterialTheme(textTheme).light();
+
     return MaterialApp(
       title: 'MealIt',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const HomePage(),
       debugShowCheckedModeBanner: false,
+      theme: customTheme,
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const HomePage(),
+        '/profile': (context) => const ProfilePage(title: 'Perfil'),
+        '/preferences': (context) => const PreferencesPage(),
+        '/favorites': (context) => const FavoritesPage(),
+      },
     );
   }
 }

@@ -1,10 +1,12 @@
 class Meal {
+  final String idMeal;  
   final String name;
   final String imageUrl;
   final String instructions;
   final List<String> ingredients;
 
   Meal({
+    required this.idMeal,
     required this.name,
     required this.imageUrl,
     required this.instructions,
@@ -21,6 +23,7 @@ class Meal {
       }
     }
     return Meal(
+      idMeal: json['idMeal'] ?? '',
       name: json['strMeal'] ?? '',
       imageUrl: json['strMealThumb'] ?? '',
       instructions: json['strInstructions'] ?? '',
