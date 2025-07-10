@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mealit/entity/meal_model.dart';
 import 'package:mealit/services/api_service.dart';
 import 'package:mealit/widgets/meal_detail.dart';
@@ -30,6 +32,10 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   static const List<String> _routes = ['/', '/profile', '/preferences', '/favorites'];
 
+  // Claves para SharedPreferences
+  static const _prefKeyRecommendedMeal = 'recommended_meal';
+  static const _prefKeyRecommendedDate = 'recommended_date';
+
   @override
   void initState() {
     super.initState();
@@ -37,7 +43,27 @@ class _HomePageState extends State<HomePage> {
     loadDropdownData();
   }
 
+  // Carga la receta recomendada guardada o una nueva si cambió el día
   Future<void> loadRecommendedMeal() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final savedDate = prefs.getString(_prefKeyRecommendedDate);
+    final todayDate = DateTime.now().toIso8601String().substring(0, 10); // YYYY-MM-DD
+
+    if (savedDate == todayDate) {
+      final savedMealJson = prefs.getString(_prefKeyRecommendedMeal);
+      if (savedMealJson != null) {
+        final mealMap = jsonDecode(savedMealJson);
+        if (!mounted) return;
+        setState(() {
+          recommendedMeal = Meal.fromJson(mealMap);
+          isLoading = false;
+        });
+        return;
+      }
+    }
+
+    // Si no hay receta guardada para hoy o fecha diferente, carga nueva
     if (!mounted) return;
     setState(() => isLoading = true);
 
@@ -45,6 +71,9 @@ class _HomePageState extends State<HomePage> {
 
     if (!mounted) return;
     if (data != null) {
+      await prefs.setString(_prefKeyRecommendedDate, todayDate);
+      await prefs.setString(_prefKeyRecommendedMeal, jsonEncode(data));
+
       setState(() {
         recommendedMeal = Meal.fromJson(data);
         isLoading = false;
@@ -57,6 +86,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // Carga categorías, áreas e ingredientes para los filtros
   Future<void> loadDropdownData() async {
     final fetchedCategories = await apiService.getAllCategories();
     final fetchedAreas = await apiService.getAllAreas();
@@ -70,6 +100,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  // Busca comidas según tipo y texto
   Future<void> search(String query) async {
     if (query.isEmpty) {
       if (!mounted) return;
@@ -114,6 +145,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  // Muestra detalle de receta en modal
   Future<void> _showMealDetail(Meal meal) async {
     final data = await apiService.fetchMealById(meal.idMeal);
     if (data != null && mounted) {
@@ -126,6 +158,32 @@ class _HomePageState extends State<HomePage> {
         ),
         builder: (_) => MealDetailView(meal: fullMeal),
       );
+    }
+  }
+
+  // Obtiene una nueva receta y la guarda, usada por botón "Nueva comida"
+  Future<void> fetchNewRecommendedMeal() async {
+    if (!mounted) return;
+    setState(() => isLoading = true);
+
+    final data = await apiService.fetchRandomMeal();
+
+    if (!mounted) return;
+    if (data != null) {
+      final prefs = await SharedPreferences.getInstance();
+      final todayDate = DateTime.now().toIso8601String().substring(0, 10);
+      await prefs.setString(_prefKeyRecommendedDate, todayDate);
+      await prefs.setString(_prefKeyRecommendedMeal, jsonEncode(data));
+
+      setState(() {
+        recommendedMeal = Meal.fromJson(data);
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        error = 'No se pudo cargar la comida recomendada';
+        isLoading = false;
+      });
     }
   }
 
@@ -223,7 +281,7 @@ class _HomePageState extends State<HomePage> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                onPressed: loadRecommendedMeal,
+                                onPressed: fetchNewRecommendedMeal,
                                 icon: const Icon(Icons.refresh),
                                 label: const Text('Nueva comida'),
                               )

@@ -19,7 +19,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late TextEditingController _bioController;
   late TextEditingController _heightController;
   late TextEditingController _weightController;
-  late TextEditingController _dietaryHabitsController;
 
   String? _profileImagePath; // ruta local de la imagen
 
@@ -34,7 +33,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _bioController = TextEditingController(text: p.bio);
     _heightController = TextEditingController(text: p.heightCm.toString());
     _weightController = TextEditingController(text: p.weightKg.toString());
-    _dietaryHabitsController = TextEditingController(text: p.dietaryHabits);
     _profileImagePath = p.profileImage.isNotEmpty ? p.profileImage : null;
   }
 
@@ -45,7 +43,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _bioController.dispose();
     _heightController.dispose();
     _weightController.dispose();
-    _dietaryHabitsController.dispose();
     super.dispose();
   }
 
@@ -65,8 +62,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       bio: _bioController.text.trim(),
       heightCm: double.tryParse(_heightController.text.trim()) ?? widget.profile.heightCm,
       weightKg: double.tryParse(_weightController.text.trim()) ?? widget.profile.weightKg,
-      dietaryHabits: _dietaryHabitsController.text.trim(),
       profileImage: _profileImagePath ?? '',
+      // No se toca dietaryHabits aquí porque se maneja desde Preferencias
     );
 
     await UserProfileStorage.save(updatedProfile);
@@ -158,10 +155,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               decoration: const InputDecoration(labelText: 'Peso (kg)'),
               keyboardType: TextInputType.number,
             ),
-            TextField(
-              controller: _dietaryHabitsController,
-              decoration: const InputDecoration(labelText: 'Hábitos alimenticios'),
-            ),
+
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _saveProfile,

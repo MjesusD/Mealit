@@ -19,12 +19,8 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   UserProfile? profile;
 
-  // Índice para las pestañas internas (perfil, biblioteca, crear receta)
   int _internalTabIndex = 0;
-
   final GlobalKey<MyLibraryPageState> _libraryKey = GlobalKey();
-
-  // Índice fijo para el drawer (perfil es la posición 1)
   final int _drawerSelectedIndex = 1;
 
   static const List<String> _routes = ['/', '/profile', '/preferences', '/favorites'];
@@ -37,44 +33,60 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _loadUserProfile() async {
     final loadedProfile = await UserProfileStorage.load();
+
+    if (!mounted) return;
+
     if (loadedProfile == null) {
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => EditProfilePage(
-            profile: UserProfile(
-              name: '',
-              age: 0,
-              bio: '',
-              profileImage: '',
-              galleryImages: [],
-              heightCm: 0,
-              weightKg: 0,
-              dietaryHabits: '',
-              dietaryPreferences: [],
-              favoriteMealsIds: [],
+      // Redirigir al formulario de creación de perfil si no existe aún
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => EditProfilePage(
+              profile: UserProfile(
+                name: '',
+                age: 0,
+                bio: '',
+                profileImage: '',
+                galleryImages: [],
+                heightCm: 0,
+                weightKg: 0,
+                dietaryHabits: '',
+                dietaryPreferences: [],
+                favoriteMealsIds: [],
+              ),
             ),
           ),
-        ),
-      );
+        );
+      });
       return;
     }
-    if (!mounted) return;
+
     setState(() {
       profile = loadedProfile;
     });
   }
 
-  // Navegación desde el drawer — solo cambia página principal
-  void _onSelectPage(int index) {
+  void _onSelectPage(int index) async {
     if (index == _drawerSelectedIndex) {
-      Navigator.pop(context); // Cierra el drawer si ya estás aquí
+      Navigator.pop(context);
       return;
     }
-    Navigator.popAndPushNamed(context, _routes[index]);
+
+    final targetRoute = _routes[index];
+    Navigator.pop(context);
+
+    if (ModalRoute.of(context)?.settings.name == targetRoute) return;
+
+    if (targetRoute == '/preferences') {
+      final result = await Navigator.pushNamed(context, targetRoute);
+      if (result == true) {
+        await _loadUserProfile();
+      }
+    } else {
+      Navigator.pushNamed(context, targetRoute);
+    }
   }
 
-  // Cambio pestañas internas (perfil, biblioteca, crear receta)
   void _onInternalTabTapped(int index) {
     setState(() {
       _internalTabIndex = index;
@@ -86,13 +98,16 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _handleEditProfile() async {
     if (profile == null) return;
+
     final updatedProfile = await Navigator.push<UserProfile>(
       context,
       MaterialPageRoute(
         builder: (context) => EditProfilePage(profile: profile!),
       ),
     );
+
     if (!mounted) return;
+
     if (updatedProfile != null) {
       await UserProfileStorage.save(updatedProfile);
       setState(() {
