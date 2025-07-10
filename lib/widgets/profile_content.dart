@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mealit/entity/user_profile.dart';
+import 'package:mealit/models/recipe_storage.dart';
 import 'package:mealit/pages/image_preview.dart';
 import '../entity/info_chip.dart';
+import '../entity/recipe_model.dart';
 
 class ProfileContent extends StatelessWidget {
   final UserProfile profile;
@@ -94,9 +96,16 @@ class ProfileContent extends StatelessWidget {
                   runSpacing: 8,
                   children: dietaryHabits
                       .map((habit) => Chip(
-                            label: Text(habit),
-                            backgroundColor: colorScheme.primary.withOpacity(0.15),
-                            avatar: const Icon(Icons.check_circle, size: 18),
+                            label: Text(
+                              habit,
+                              style: TextStyle(color: colorScheme.onPrimaryContainer),
+                            ),
+                            backgroundColor: colorScheme.primaryContainer,
+                            avatar: Icon(
+                              Icons.check_circle,
+                              size: 18,
+                              color: colorScheme.onPrimaryContainer,
+                            ),
                           ))
                       .toList(),
                 ),
@@ -119,9 +128,16 @@ class ProfileContent extends StatelessWidget {
                   runSpacing: 8,
                   children: profile.dietaryPreferences
                       .map((pref) => Chip(
-                            label: Text(pref),
-                            backgroundColor: colorScheme.secondary.withOpacity(0.2),
-                            avatar: const Icon(Icons.restaurant_menu, size: 18),
+                            label: Text(
+                              pref,
+                              style: TextStyle(color: colorScheme.onSecondaryContainer),
+                            ),
+                            backgroundColor: colorScheme.secondaryContainer,
+                            avatar: Icon(
+                              Icons.restaurant_menu,
+                              size: 18,
+                              color: colorScheme.onSecondaryContainer,
+                            ),
                           ))
                       .toList(),
                 ),
@@ -133,34 +149,52 @@ class ProfileContent extends StatelessWidget {
             child: Text('Recetas guardadas', style: textTheme.titleMedium),
           ),
           const SizedBox(height: 12),
-          profile.galleryImages.isEmpty
-              ? Text(
-                  'No has guardado recetas aún',
+
+          FutureBuilder<List<Recipe>>(
+            future: RecipeStorage.loadRecipes(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final recipes = snapshot.data!;
+              final validRecipes = recipes
+                  .where((r) => r.imagePath.isNotEmpty && File(r.imagePath).existsSync())
+                  .toList();
+
+              if (validRecipes.isEmpty) {
+                return Text(
+                  'No has creado recetas aún',
                   style: TextStyle(color: colorScheme.onSurfaceVariant),
-                )
-              : GridView.count(
-                  crossAxisCount: 3,
-                  shrinkWrap: true,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: profile.galleryImages.map((imgPath) {
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ImagePreviewPage(imagePath: imgPath),
-                          ),
-                        );
-                      },
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.file(File(imgPath), fit: BoxFit.cover),
-                      ),
-                    );
-                  }).toList(),
-                ),
+                );
+              }
+
+              return GridView.count(
+                crossAxisCount: 3,
+                shrinkWrap: true,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                physics: const NeverScrollableScrollPhysics(),
+                children: validRecipes.map((recipe) {
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ImagePreviewPage(imagePath: recipe.imagePath),
+                        ),
+                      );
+                    },
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.file(File(recipe.imagePath), fit: BoxFit.cover),
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+          ),
+
           const SizedBox(height: 48),
         ],
       ),

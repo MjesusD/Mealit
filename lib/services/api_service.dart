@@ -129,6 +129,54 @@ class ApiService {
     }
     return [];
   }
+  
+    // Buscar recetas por primera letra
+  Future<List<dynamic>?> searchMealsByFirstLetter(String letter) async {
+    final url = Uri.parse('$_baseUrl/search.php?f=$letter');
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        logger.i('Búsqueda por letra "$letter": ${data['meals']?.length ?? 0} resultados');
+        return data['meals'];
+      }
+    } catch (e, s) {
+      logger.e('Error en searchMealsByFirstLetter', error: e, stackTrace: s);
+    }
+    return null;
+  }
+
+
+  Future<List<dynamic>?> fetchAllMeals() async {
+    final allMeals = <dynamic>[];
+    final letters = 'abcdefghijklmnopqrstuvwxyz';
+
+    for (var letter in letters.split('')) {
+      final url = Uri.parse('$_baseUrl/search.php?f=$letter');
+      try {
+        final response = await http.get(url);
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          if (data['meals'] != null) {
+            allMeals.addAll(data['meals']);
+            logger.i('Letras "$letter": ${data['meals'].length} recetas obtenidas');
+          } else {
+            logger.i('Letras "$letter": sin recetas');
+          }
+        } else {
+          logger.w('Letras "$letter": respuesta inesperada ${response.statusCode}');
+        }
+      } catch (e, s) {
+        logger.e('Error al obtener recetas para la letra "$letter"', error: e, stackTrace: s);
+      }
+    }
+    if (allMeals.isEmpty) {
+      logger.w('No se encontraron recetas para ninguna letra');
+      return null;
+    }
+    return allMeals;
+  }
+
 
   Future<Map<String, dynamic>?> fetchMealById(String id) async {
     final url = Uri.parse('$_baseUrl/lookup.php?i=$id');
