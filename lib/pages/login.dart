@@ -31,27 +31,55 @@ class LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> checkIfLoggedIn() async {
-  // Solo redirigir si ya está logueado
-  if (authRepository.isLoggedIn() && mounted) {
-    Navigator.of(context).pushReplacementNamed('/home');
-  }
-  // Si no está logueado, no hacer nada (mostrará el login)
-}
-
-  Future<void> login() async {
-    if (!formKey.currentState!.validate()) return;
-    setState(() => isLoading = true);
-
-    final success = await authRepository.login(
-      usernameController.text,
-      emailController.text,
-      passwordController.text,
-    );
-
-    if (success && mounted) {
+    // Solo redirigir si ya está logueado
+    if (authRepository.isLoggedIn() && mounted) {
       Navigator.of(context).pushReplacementNamed('/home');
     }
-    setState(() => isLoading = false);
+    // Si no está logueado, no hacer nada (mostrará el login)
+  }
+
+  Future<void> login() async {
+    // 1. Validar el formulario primero
+    if (!formKey.currentState!.validate()) return;
+
+    setState(() => isLoading = true);
+
+    try {
+      // 2. Ejecutar el login
+      final success = await authRepository.login(
+        usernameController.text,
+        emailController.text,
+        passwordController.text,
+      );
+
+      // 3. Verificar si el widget sigue montado
+      if (!mounted) return;
+
+      // 4. Manejar el resultado
+      if (success) {
+        Navigator.of(context).pushReplacementNamed('/home');
+      } else {
+        // Mostrar error si el login falla
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error en las credenciales')),
+        );
+      }
+      if (usernameController.text.isEmpty || emailController.text.isEmpty || passwordController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Todos los campos son requeridos')),
+        );
+        return;
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
   }
 
   @override

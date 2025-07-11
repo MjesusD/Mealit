@@ -6,6 +6,8 @@ import 'package:mealit/pages/edit_profile.dart';
 import 'package:mealit/models/profile_storage.dart';
 import '../widgets/drawer.dart';
 import '../widgets/profile_content.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../entity/auth_repository.dart';
 
 class ProfilePage extends StatefulWidget {
   final String title;
@@ -37,38 +39,41 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _loadUserProfile() async {
-    final loadedProfile = await UserProfileStorage.load();
+  final loadedProfile = await UserProfileStorage.load();
+  final prefs = await SharedPreferences.getInstance();
+  final authRepo = AuthRepository(prefs);
 
-    if (!mounted) return;
+  if (!mounted) return;
 
-    if (loadedProfile == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => EditProfilePage(
-              profile: UserProfile(
-                name: '',
-                age: 0,
-                bio: '',
-                profileImage: '',
-                galleryImages: [],
-                heightCm: 0,
-                weightKg: 0,
-                dietaryHabits: '',
-                dietaryPreferences: [],
-                favoriteMealsIds: [],
-              ),
+  if (loadedProfile == null) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => EditProfilePage(
+            profile: UserProfile(
+              name: authRepo.getUsername() ?? '', // Usa el nombre del login
+              age: 0,
+              bio: '',
+              profileImage: '',
+              galleryImages: [],
+              heightCm: 0,
+              weightKg: 0,
+              dietaryHabits: '',
+              dietaryPreferences: [],
+              favoriteMealsIds: [],
             ),
           ),
-        );
-      });
-      return;
-    }
-
-    setState(() {
-      profile = loadedProfile;
+        ),
+      );
     });
+    return;
   }
+
+  setState(() {
+    profile = loadedProfile;
+  });
+}
+
 
   void _onSelectPage(int index) async {
     if (index == _drawerSelectedIndex) {
@@ -127,11 +132,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _handleEditProfile() async {
     if (profile == null) return;
-
+     final prefs = await SharedPreferences.getInstance();
+    final authRepo = AuthRepository(prefs);
+    final currentUsername = authRepo.getUsername();
     final updatedProfile = await Navigator.push<UserProfile>(
       context,
       MaterialPageRoute(
-        builder: (context) => EditProfilePage(profile: profile!),
+        builder: (context) => EditProfilePage(profile: profile!.copyWith(name: currentUsername ?? profile!.name,),),
       ),
     );
 

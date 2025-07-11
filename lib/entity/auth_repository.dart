@@ -36,7 +36,7 @@ class AuthRepository {
   }
 
   String? getUsername() {
-    return prefs.getString(_keyUsername);
+  return prefs.getString(_keyUsername);
   }
 
   String? getEmail() {

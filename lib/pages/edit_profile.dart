@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mealit/entity/user_profile.dart';
 import 'package:mealit/models/profile_storage.dart';
+import '../entity/auth_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class EditProfilePage extends StatefulWidget {
   final UserProfile profile;
@@ -14,23 +16,43 @@ class EditProfilePage extends StatefulWidget {
 }
 
 class _EditProfilePageState extends State<EditProfilePage> {
-  late TextEditingController _nameController;
-  late TextEditingController _ageController;
-  late TextEditingController _heightController;
-  late TextEditingController _weightController;
+  late final TextEditingController _nameController;
+  late final TextEditingController _ageController;
+  late final TextEditingController _heightController;
+  late final TextEditingController _weightController;
 
   String? _profileImagePath;
   final ImagePicker _picker = ImagePicker();
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
+    // Inicializa con valores temporales
+    _nameController = TextEditingController();
+    _ageController = TextEditingController();
+    _heightController = TextEditingController();
+    _weightController = TextEditingController();
+    
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final authRepo = AuthRepository(prefs);
     final p = widget.profile;
-    _nameController = TextEditingController(text: p.name);
-    _ageController = TextEditingController(text: p.age.toString());
-    _heightController = TextEditingController(text: p.heightCm.toString());
-    _weightController = TextEditingController(text: p.weightKg.toString());
+
+    _nameController.text = authRepo.getUsername() ?? p.name;
+    _ageController.text = p.age.toString();
+    _heightController.text = p.heightCm.toString();
+    _weightController.text = p.weightKg.toString();
     _profileImagePath = p.profileImage.isNotEmpty ? p.profileImage : null;
+
+    if (mounted) {
+      setState(() {
+        _isInitialized = true;
+      });
+    }
   }
 
   @override
@@ -87,6 +109,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_isInitialized) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('Editar Perfil'),
@@ -128,6 +155,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Nombre'),
+              readOnly: true, // Opcional: si quieres que el nombre no sea editable
             ),
             TextField(
               controller: _ageController,
