@@ -9,26 +9,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mealit/main.dart';
-import '../lib/entity/auth_repository.dart';
+import 'package:mealit/entity/auth_repository.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  testWidgets('App carga sin errores y navega correctamente', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final authRepository = AuthRepository(prefs);
-    await tester.pumpWidget(MyApp(authRepository: authRepository));
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    await tester.pumpWidget(
+      MyApp(
+        authRepository: authRepository,
+        scaffoldMessengerKey: scaffoldMessengerKey,
+      ),
+    );
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    await tester.pumpAndSettle();
+
+    expect(find.text('MealIt'), findsOneWidget);
   });
 }

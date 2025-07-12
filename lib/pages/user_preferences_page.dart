@@ -28,7 +28,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
 
   // Drawer selected index
   final int _drawerSelectedIndex = 2;
-  static const List<String> _routes = ['/home', '/profile', '/preferences', '/favorites'];
+  static const List<String> _routes = ['/home', '/profile', '/preferences', '/favorites', '/about'];
 
   @override
   void initState() {
@@ -122,28 +122,26 @@ class _PreferencesPageState extends State<PreferencesPage> {
   }
 
   void _onSelectPage(int index) {
-  if (index == _drawerSelectedIndex) {
+    if (index == _drawerSelectedIndex) {
+      Navigator.pop(context);
+      return;
+    }
+
     Navigator.pop(context);
-    return;
+
+    final targetRoute = _routes[index];
+
+    if (ModalRoute.of(context)?.settings.name == targetRoute) {
+      // Ya estamos en la ruta, no navegamos
+      return;
+    }
+
+    if (Navigator.of(context).canPop()) {
+      Navigator.pushReplacementNamed(context, targetRoute);
+    } else {
+      Navigator.pushNamed(context, targetRoute);
+    }
   }
-
-  Navigator.pop(context);
-
-  final targetRoute = _routes[index];
-
-  if (ModalRoute.of(context)?.settings.name == targetRoute) {
-    // Ya estamos en la ruta, no navegamos
-    return;
-  }
-
-  if (Navigator.of(context).canPop()) {
-  Navigator.pushReplacementNamed(context, targetRoute);
-} else {
-  Navigator.pushNamed(context, targetRoute);
-}
-
-
-}
 
   @override
   Widget build(BuildContext context) {

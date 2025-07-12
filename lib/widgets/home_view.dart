@@ -3,6 +3,7 @@ import 'package:mealit/entity/meal_model.dart';
 import 'package:mealit/widgets/meal_list.dart';
 
 class HomeView extends StatelessWidget {
+  
   final Meal? recommendedMeal;
   final List<Meal> meals;
   final bool isLoading;
@@ -28,7 +29,9 @@ class HomeView extends StatelessWidget {
   final String selectedLetter;
 
   final Set<String> favoriteMealIds;
- final void Function(Meal meal) onToggleFavorite;
+  final void Function(Meal meal) onToggleFavorite;
+
+  final bool hasConnection;  // NUEVO campo para estado de conexión
 
   const HomeView({
     super.key,
@@ -53,6 +56,7 @@ class HomeView extends StatelessWidget {
     required this.hasSearched,
     required this.favoriteMealIds,
     required this.onToggleFavorite,
+    required this.hasConnection,
   });
 
   @override
@@ -60,8 +64,31 @@ class HomeView extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
+    if (!hasConnection) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
+            'No hay conexión a internet.\nPor favor, verifica tu red.',
+            style: TextStyle(
+              color: colorScheme.error,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
     if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: SizedBox(
+          width: 60,
+          height: 60,
+          child: CircularProgressIndicator(strokeWidth: 6),
+        ),
+      );
     }
 
     return Padding(
@@ -98,6 +125,22 @@ class HomeView extends StatelessWidget {
                           width: 90,
                           height: 90,
                           fit: BoxFit.cover,
+                          loadingBuilder: (context, child, progress) {
+                            if (progress == null) return child;
+                            return const SizedBox(
+                              width: 90,
+                              height: 90,
+                              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: 90,
+                              height: 90,
+                              color: colorScheme.onSurfaceVariant.withOpacity(0.1),
+                              child: const Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -146,7 +189,6 @@ class HomeView extends StatelessWidget {
               ),
             ),
 
-          // Dropdown para tipo de búsqueda
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: DropdownButtonFormField<String>(
@@ -166,7 +208,6 @@ class HomeView extends StatelessWidget {
             ),
           ),
 
-          // Barra de letras para búsqueda por primera letra (solo si searchType es 'name' y texto vacío)
           if (searchType == 'name' && searchController.text.isEmpty)
             SizedBox(
               height: 40,
@@ -183,13 +224,13 @@ class HomeView extends StatelessWidget {
                       selected: isSelected,
                       onSelected: (_) => onLetterSelected(letter),
                       selectedColor: colorScheme.primaryContainer,
+                      tooltip: 'Buscar por la letra ${letter.toUpperCase()}',
                     ),
                   );
                 },
               ),
             ),
 
-          // Fila: buscador + dropdown filtro dinámico
           Row(
             children: [
               Expanded(
@@ -222,9 +263,12 @@ class HomeView extends StatelessWidget {
                   value: selectedFilterValue,
                   isExpanded: true,
                   hint: const Text('Selecciona una opción'),
-                  items: filterOptions
-                      .map((val) => DropdownMenuItem(value: val, child: Text(val)))
-                      .toList(),
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text('Todos')),
+                    ...filterOptions
+                        .map((val) => DropdownMenuItem(value: val, child: Text(val)))
+                        .toList(),
+                  ],
                   onChanged: onFilterValueChanged,
                   decoration: InputDecoration(
                     filled: true,
@@ -242,7 +286,6 @@ class HomeView extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // Mostrar mensaje de error solo si hubo búsqueda y no hay resultados
           if (hasSearched && error != null && meals.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -256,8 +299,9 @@ class HomeView extends StatelessWidget {
             child: meals.isEmpty
                 ? Center(
                     child: Text(
-                      'No hay comidas para mostrar.',
+                      hasSearched ? 'No hay comidas para mostrar.' : 'Usa el buscador para encontrar comidas.',
                       style: textTheme.bodyLarge,
+                      textAlign: TextAlign.center,
                     ),
                   )
                 : MealListWidget(

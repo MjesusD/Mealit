@@ -35,15 +35,23 @@ class _FilterExplorerPageState extends State<FilterExplorerPage> {
   }
 
   Future<void> loadFilters() async {
-    final cats = await apiService.getAllCategories();
-    final ars = await apiService.getAllAreas();
-    final ings = await apiService.getAllIngredients();
+    try {
+      final cats = await apiService.getAllCategories();
+      final ars = await apiService.getAllAreas();
+      final ings = await apiService.getAllIngredients();
 
-    setState(() {
-      categories = cats;
-      areas = ars;
-      ingredients = ings;
-    });
+      setState(() {
+        categories = cats;
+        areas = ars;
+        ingredients = ings;
+      });
+    } catch (e) {
+      setState(() {
+        categories = [];
+        areas = [];
+        ingredients = [];
+      });
+    }
   }
 
   Future<void> loadFavoriteMeals() async {
@@ -71,41 +79,36 @@ class _FilterExplorerPageState extends State<FilterExplorerPage> {
   }
 
   Future<void> applyFilters() async {
-  setState(() {
-    isLoading = true;
-    meals = [];
-  });
-
-  List<dynamic>? results;
-
-  if (selectedCategory != null) {
-    results = await apiService.filterByCategory(selectedCategory!);
-  } else if (selectedArea != null) {
-    results = await apiService.filterByArea(selectedArea!);
-  } else if (selectedIngredient != null) {
-    results = await apiService.filterByIngredient(selectedIngredient!);
-  }
-
-  setState(() {
-    if (results != null) {
-      meals = results.map((json) => Meal.fromJson(json)).toList();
-    } else {
+    setState(() {
+      isLoading = true;
       meals = [];
-    }
-    isLoading = false;
-  });
-}
+    });
 
+    List<dynamic>? results;
+
+    if (selectedCategory != null) {
+      results = await apiService.filterByCategory(selectedCategory!);
+    } else if (selectedArea != null) {
+      results = await apiService.filterByArea(selectedArea!);
+    } else if (selectedIngredient != null) {
+      results = await apiService.filterByIngredient(selectedIngredient!);
+    }
+
+    setState(() {
+      meals = results?.map((json) => Meal.fromJson(json)).toList() ?? [];
+      isLoading = false;
+    });
+  }
 
   Widget buildDropdown(
     String label,
     List<String> items,
     String? selectedValue,
-    Function(String?) onChanged,
+    ValueChanged<String?> onChanged,
   ) {
     return DropdownButtonFormField<String>(
       decoration: InputDecoration(labelText: label),
-      value: selectedValue,
+      value: items.contains(selectedValue) ? selectedValue : null,
       items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
       onChanged: onChanged,
     );
@@ -119,29 +122,55 @@ class _FilterExplorerPageState extends State<FilterExplorerPage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            buildDropdown('Categoría', categories, selectedCategory, (val) {
-              setState(() {
-                selectedCategory = val;
-                selectedArea = null;
-                selectedIngredient = null;
-              });
-            }),
+            buildDropdown(
+              'Categoría',
+              categories,
+              selectedCategory,
+              (val) {
+                setState(() {
+                  if (val != null) {
+                    selectedCategory = val;
+                    selectedArea = null;
+                    selectedIngredient = null;
+                  }
+                });
+              },
+            ),
+
             const SizedBox(height: 12),
-            buildDropdown('Área', areas, selectedArea, (val) {
-              setState(() {
-                selectedArea = val;
-                selectedCategory = null;
-                selectedIngredient = null;
-              });
-            }),
+
+            buildDropdown(
+              'Área',
+              areas,
+              selectedArea,
+              (val) {
+                setState(() {
+                  if (val != null) {
+                    selectedArea = val;
+                    selectedCategory = null;
+                    selectedIngredient = null;
+                  }
+                });
+              },
+            ),
+
             const SizedBox(height: 12),
-            buildDropdown('Ingrediente', ingredients, selectedIngredient, (val) {
-              setState(() {
-                selectedIngredient = val;
-                selectedCategory = null;
-                selectedArea = null;
-              });
-            }),
+
+            buildDropdown(
+              'Ingrediente',
+              ingredients,
+              selectedIngredient,
+              (val) {
+                setState(() {
+                  if (val != null) {
+                    selectedIngredient = val;
+                    selectedCategory = null;
+                    selectedArea = null;
+                  }
+                });
+              },
+            ),
+
             const SizedBox(height: 20),
             ElevatedButton.icon(
               icon: const Icon(Icons.search),
@@ -149,6 +178,7 @@ class _FilterExplorerPageState extends State<FilterExplorerPage> {
               onPressed: applyFilters,
             ),
             const SizedBox(height: 20),
+
             Expanded(
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -159,7 +189,7 @@ class _FilterExplorerPageState extends State<FilterExplorerPage> {
                           favoriteMealIds: favoriteMealIds,
                           onToggleFavorite: onToggleFavorite,
                           onMealTap: (meal) {
-                            // Puedes implementar vista detallada si quieres
+                            // Implementa el detalle si quieres
                           },
                         ),
             ),

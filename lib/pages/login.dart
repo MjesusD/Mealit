@@ -1,219 +1,199 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mealit/pages/home.dart';
 import '../entity/auth_repository.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  final AuthRepository authRepository;
+
+  const LoginScreen({super.key, required this.authRepository});
 
   @override
-  LoginScreenState createState() => LoginScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class LoginScreenState extends State<LoginScreen> {
-  final formKey = GlobalKey<FormState>();
-  final usernameController = TextEditingController();
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
+enum AuthMode { login, signup }
 
-  bool isLoading = false;
-  late AuthRepository authRepository;
+class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+
+  late AuthRepository _authRepo;
+  AuthMode _authMode = AuthMode.login;
+
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  bool _isLoading = false;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    initialize();
+    _authRepo = widget.authRepository;
   }
 
-  Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    authRepository = AuthRepository(prefs);
-    checkIfLoggedIn();
-  }
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
 
-  Future<void> checkIfLoggedIn() async {
-    // Solo redirigir si ya está logueado
-    if (authRepository.isLoggedIn() && mounted) {
-      Navigator.of(context).pushReplacementNamed('/home');
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    final username = _usernameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    bool success = false;
+
+    if (_authMode == AuthMode.login) {
+      // Solo verificar, no volver a guardar si ya está registrado
+      success = _authRepo.verifyCredentials(email, password);
+      if (!success) {
+        _error = 'Correo o contraseña incorrectos';
+      }
+    } else {
+      // Registro: guardar usuario nuevo
+      success = await _authRepo.login(username, email, password);
+      if (!success) {
+        _error = 'Error al registrar usuario';
+      }
     }
-    // Si no está logueado, no hacer nada (mostrará el login)
-  }
 
-  Future<void> login() async {
-    // 1. Validar el formulario primero
-    if (!formKey.currentState!.validate()) return;
-
-    setState(() => isLoading = true);
-
-    try {
-      // 2. Ejecutar el login
-      final success = await authRepository.login(
-        usernameController.text,
-        emailController.text,
-        passwordController.text,
-      );
-
-      // 3. Verificar si el widget sigue montado
+    if (success) {
       if (!mounted) return;
-
-      // 4. Manejar el resultado
-      if (success) {
-        Navigator.of(context).pushReplacementNamed('/home');
-      } else {
-        // Mostrar error si el login falla
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error en las credenciales')),
-        );
-      }
-      if (usernameController.text.isEmpty || emailController.text.isEmpty || passwordController.text.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Todos los campos son requeridos')),
-        );
-        return;
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
+      Navigator.pushReplacement(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
-    } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
+        MaterialPageRoute(builder: (_) => const HomePage()),
+      );
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+      if (_error != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_error!)),
+        );
       }
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.amber,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'Iniciar Sesión',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                TextFormField(
-                  controller: usernameController,
-                  decoration: InputDecoration(
-                    labelText: 'Nombre de usuario',
-                    border: const OutlineInputBorder(),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 16,
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor ingresa tu nombre de usuario';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: emailController,
-                  decoration: InputDecoration(
-                    labelText: 'Correo electrónico',
-                    border: const OutlineInputBorder(),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 16,
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor ingresa tu correo electrónico';
-                    }
-                    if (!value.contains('@')) {
-                      return 'Ingresa un correo electrónico válido';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: passwordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: 'Contraseña',
-                    border: const OutlineInputBorder(),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 16,
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor ingresa tu contraseña';
-                    }
-                    if (value.length < 6) {
-                      return 'La contraseña debe tener al menos 6 caracteres';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : login,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
-                      ),
-                    ),
-                    child:
-                        isLoading
-                            ? const CircularProgressIndicator(
-                              color: Colors.white,
-                            )
-                            : const Text(
-                              'Ingresar',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                              ),
-                            ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
-        child: const Text(
-          'Mealit',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-      ),
-    );
+  void _switchAuthMode() {
+    setState(() {
+      _authMode = _authMode == AuthMode.login ? AuthMode.signup : AuthMode.login;
+      _error = null;
+    });
   }
 
   @override
   void dispose() {
-    usernameController.dispose();
-    emailController.dispose();
-    passwordController.dispose();
+    _usernameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
+    return Scaffold(
+      backgroundColor: colorScheme.surfaceBright,
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Card(
+            elevation: 8,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _authMode == AuthMode.login
+                          ? 'Iniciar sesión en MealIt'
+                          : 'Registrar usuario en MealIt',
+                      style: textTheme.headlineSmall?.copyWith(color: colorScheme.primary),
+                    ),
+                    const SizedBox(height: 16),
+                    if (_authMode == AuthMode.signup)
+                      TextFormField(
+                        controller: _usernameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Nombre de usuario',
+                          prefixIcon: Icon(Icons.person),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Ingrese un nombre de usuario';
+                          }
+                          return null;
+                        },
+                      ),
+                    if (_authMode == AuthMode.signup) const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Correo electrónico',
+                        prefixIcon: Icon(Icons.email),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'Ingrese un correo';
+                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                          return 'Ingrese un correo válido';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _passwordController,
+                      decoration: const InputDecoration(
+                        labelText: 'Contraseña',
+                        prefixIcon: Icon(Icons.lock),
+                      ),
+                      obscureText: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'Ingrese una contraseña';
+                        if (value.length < 6) return 'La contraseña debe tener al menos 6 caracteres';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _submit,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colorScheme.primary,
+                          foregroundColor: colorScheme.onPrimary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : Text(_authMode == AuthMode.login ? 'Iniciar sesión' : 'Registrar'),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _isLoading ? null : _switchAuthMode,
+                      child: Text(_authMode == AuthMode.login
+                          ? '¿No tienes cuenta? Regístrate'
+                          : '¿Ya tienes cuenta? Inicia sesión'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

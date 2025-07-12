@@ -1,27 +1,78 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mealit/pages/home.dart';
 import 'package:mealit/pages/profile_page.dart';
 import 'package:mealit/pages/user_preferences_page.dart';
 import 'package:mealit/pages/favorites.dart';
 import 'package:mealit/pages/splash_page.dart';
 import 'package:mealit/pages/login.dart';
+import 'package:mealit/pages/offline_page.dart';
+import 'package:mealit/pages/about.dart';
 import 'package:mealit/themes/theme.dart';
 import 'package:mealit/utils/util.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../entity/auth_repository.dart'; // Añadido
+import 'package:mealit/services/connectivity_service.dart';
+import 'package:mealit/entity/auth_repository.dart';
+
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   final prefs = await SharedPreferences.getInstance();
   final authRepository = AuthRepository(prefs);
-  runApp(MyApp(authRepository: authRepository));
+
+  await ConnectivityService.instance.initialize();
+
+  runApp(MyApp(
+    authRepository: authRepository,
+    scaffoldMessengerKey: scaffoldMessengerKey,
+  ));
 }
 
-
 class MyApp extends StatelessWidget {
-  final AuthRepository authRepository; // Añadido
-  
-  const MyApp({super.key, required this.authRepository}); // Modificado constructor
+  final AuthRepository authRepository;
+  final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey;
+
+  const MyApp({
+    super.key,
+    required this.authRepository,
+    required this.scaffoldMessengerKey,
+  });
+
+  Future<void> navigateSafely(BuildContext context, String route) async {
+    final currentRoute = ModalRoute.of(context)?.settings.name;
+    if (currentRoute == route) return;
+
+    final hasConnection = ConnectivityService.instance.hasConnection;
+
+    if (!hasConnection) {
+      scaffoldMessengerKey.currentState?.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No hay conexión a internet. La navegación está permitida, pero el contenido podría no cargarse.',
+          ),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+
+    final mainRoutes = {'/home', '/login', '/offline', '/'};
+    final currentState = navigatorKey.currentState;
+
+    if (currentState == null) return;
+
+    if (mainRoutes.contains(route)) {
+      if (currentState.canPop()) {
+        currentState.pushReplacementNamed(route);
+      } else {
+        currentState.pushNamedAndRemoveUntil(route, (route) => false);
+      }
+    } else {
+      currentState.pushNamed(route);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,26 +80,42 @@ class MyApp extends StatelessWidget {
     final customTheme = MaterialTheme(textTheme).light();
 
     return MaterialApp(
+      navigatorKey: navigatorKey,
+      scaffoldMessengerKey: scaffoldMessengerKey,
       title: 'MealIt',
       debugShowCheckedModeBanner: false,
       theme: customTheme,
       initialRoute: '/',
       routes: {
-        '/': (context) => SplashWrapper(authRepository: authRepository), 
-        '/login': (context) => const LoginScreen(), // Añadido / faltante
-        '/home': (context) => const HomePage(),
+        '/': (context) => SplashWrapper(
+              authRepository: authRepository,
+              navigateSafely: navigateSafely,
+            ),
+        '/login': (context) => LoginScreen(authRepository: authRepository),
+        '/home': (context) => HomePage(
+              navigateSafely: (ctx, route) => navigateSafely(ctx, route),
+            ),
+        '/favorites': (context) => FavoritesPage(
+              navigateSafely: (ctx, route) => navigateSafely(ctx, route),
+            ),
         '/profile': (context) => const ProfilePage(title: 'Perfil'),
         '/preferences': (context) => const PreferencesPage(),
-        '/favorites': (context) => const FavoritesPage(),
+        '/about': (context) => const AboutPage(),
+        '/offline': (context) => const OfflinePage(),
       },
-      navigatorObservers: [routeObserver],
     );
   }
 }
 
 class SplashWrapper extends StatefulWidget {
   final AuthRepository authRepository;
-  const SplashWrapper({super.key, required this.authRepository});
+  final Future<void> Function(BuildContext, String) navigateSafely;
+
+  const SplashWrapper({
+    super.key,
+    required this.authRepository,
+    required this.navigateSafely,
+  });
 
   @override
   State<SplashWrapper> createState() => _SplashWrapperState();
@@ -56,35 +123,54 @@ class SplashWrapper extends StatefulWidget {
 
 class _SplashWrapperState extends State<SplashWrapper> {
   bool _navigated = false;
+  late StreamSubscription<bool> _connectivitySubscription;
 
   @override
   void initState() {
     super.initState();
-    _checkAuthStatus();
-     _navigateToHomeAfterDelay();
+    _checkLoginStatus();
+
+    _connectivitySubscription = ConnectivityService.instance.connectionChange.listen((connected) {
+      final currentContext = navigatorKey.currentContext;
+      if (connected && currentContext != null && mounted) {
+        scaffoldMessengerKey.currentState?.hideCurrentSnackBar();
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+
+          try {
+            final currentRoute = ModalRoute.of(currentContext)?.settings.name;
+
+            if (currentRoute == '/offline') {
+              final isLoggedIn = widget.authRepository.isLoggedIn();
+              final target = isLoggedIn ? '/home' : '/login';
+
+              navigatorKey.currentState?.pushReplacementNamed(target);
+            }
+          } catch (e) {
+            debugPrint('Error al manejar reconexión: $e');
+          }
+        });
+      }
+    });
   }
 
-  Future<void> _checkAuthStatus() async {
-    // Esperar un breve tiempo para mostrar el splash
-    await Future.delayed(const Duration(seconds: 2));
-    
-    if (!mounted) return;
-    
-    final isLoggedIn = widget.authRepository.isLoggedIn();
-    if (!_navigated) {
-      setState(() => _navigated = true);
-      Navigator.of(context).pushReplacementNamed(
-        isLoggedIn ? '/home' : '/login',
-      );
-    }
-  }
-
-  void _navigateToHomeAfterDelay() async {
+  Future<void> _checkLoginStatus() async {
     await Future.delayed(const Duration(seconds: 3));
-    if (!_navigated && mounted) {
-      _navigated = true;
-      Navigator.of(context).pushReplacementNamed('/login'); // ← Siempre va a login
-    }
+    if (!mounted || _navigated) return;
+
+    final isLoggedIn = widget.authRepository.isLoggedIn();
+
+    _navigated = true;
+    if (!mounted) return;
+
+    await widget.navigateSafely(context, isLoggedIn ? '/home' : '/login');
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription.cancel();
+    super.dispose();
   }
 
   @override

@@ -1,13 +1,23 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
+import 'package:mealit/services/connectivity_service.dart';
 
 final logger = Logger();
 
 class ApiService {
   static const String _baseUrl = 'https://www.themealdb.com/api/json/v1/1';
 
+  Future<bool> _hasConnection() async {
+    return ConnectivityService.instance.hasConnection;
+  }
+
   Future<List<dynamic>?> searchMealsByName(String name) async {
+    if (!await _hasConnection()) {
+      logger.w('Sin conexión en searchMealsByName');
+      return null;
+    }
+
     final url = Uri.parse('$_baseUrl/search.php?s=$name');
     try {
       final response = await http.get(url);
@@ -23,6 +33,11 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>?> fetchRandomMeal() async {
+    if (!await _hasConnection()) {
+      logger.w('Sin conexión en fetchRandomMeal');
+      return null;
+    }
+
     final url = Uri.parse('$_baseUrl/random.php');
     try {
       final response = await http.get(url);
@@ -37,8 +52,12 @@ class ApiService {
     return null;
   }
 
-  // Buscar por categoría
   Future<List<dynamic>?> filterByCategory(String category) async {
+    if (!await _hasConnection()) {
+      logger.w('Sin conexión en filterByCategory');
+      return null;
+    }
+
     final url = Uri.parse('$_baseUrl/filter.php?c=$category');
     try {
       final response = await http.get(url);
@@ -53,8 +72,12 @@ class ApiService {
     return null;
   }
 
-  // Buscar por país / región
   Future<List<dynamic>?> filterByArea(String area) async {
+    if (!await _hasConnection()) {
+      logger.w('Sin conexión en filterByArea');
+      return null;
+    }
+
     final url = Uri.parse('$_baseUrl/filter.php?a=$area');
     try {
       final response = await http.get(url);
@@ -69,8 +92,12 @@ class ApiService {
     return null;
   }
 
-  // Buscar por ingrediente
   Future<List<dynamic>?> filterByIngredient(String ingredient) async {
+    if (!await _hasConnection()) {
+      logger.w('Sin conexión en filterByIngredient');
+      return null;
+    }
+
     final url = Uri.parse('$_baseUrl/filter.php?i=$ingredient');
     try {
       final response = await http.get(url);
@@ -85,8 +112,12 @@ class ApiService {
     return null;
   }
 
-  // Obtener todas las categorías
   Future<List<String>> getAllCategories() async {
+    if (!await _hasConnection()) {
+      logger.w('Sin conexión en getAllCategories');
+      return [];
+    }
+
     final url = Uri.parse('$_baseUrl/list.php?c=list');
     try {
       final response = await http.get(url);
@@ -100,8 +131,12 @@ class ApiService {
     return [];
   }
 
-  // Obtener todas las áreas
   Future<List<String>> getAllAreas() async {
+    if (!await _hasConnection()) {
+      logger.w('Sin conexión en getAllAreas');
+      return [];
+    }
+
     final url = Uri.parse('$_baseUrl/list.php?a=list');
     try {
       final response = await http.get(url);
@@ -115,8 +150,12 @@ class ApiService {
     return [];
   }
 
-  // Obtener todos los ingredientes
   Future<List<String>> getAllIngredients() async {
+    if (!await _hasConnection()) {
+      logger.w('Sin conexión en getAllIngredients');
+      return [];
+    }
+
     final url = Uri.parse('$_baseUrl/list.php?i=list');
     try {
       final response = await http.get(url);
@@ -129,9 +168,13 @@ class ApiService {
     }
     return [];
   }
-  
-    // Buscar recetas por primera letra
+
   Future<List<dynamic>?> searchMealsByFirstLetter(String letter) async {
+    if (!await _hasConnection()) {
+      logger.w('Sin conexión en searchMealsByFirstLetter');
+      return null;
+    }
+
     final url = Uri.parse('$_baseUrl/search.php?f=$letter');
     try {
       final response = await http.get(url);
@@ -146,8 +189,12 @@ class ApiService {
     return null;
   }
 
-
   Future<List<dynamic>?> fetchAllMeals() async {
+    if (!await _hasConnection()) {
+      logger.w('Sin conexión en fetchAllMeals');
+      return null;
+    }
+
     final allMeals = <dynamic>[];
     final letters = 'abcdefghijklmnopqrstuvwxyz';
 
@@ -170,15 +217,21 @@ class ApiService {
         logger.e('Error al obtener recetas para la letra "$letter"', error: e, stackTrace: s);
       }
     }
+
     if (allMeals.isEmpty) {
       logger.w('No se encontraron recetas para ninguna letra');
       return null;
     }
+
     return allMeals;
   }
 
-
   Future<Map<String, dynamic>?> fetchMealById(String id) async {
+    if (!await _hasConnection()) {
+      logger.w('Sin conexión en fetchMealById');
+      return null;
+    }
+
     final url = Uri.parse('$_baseUrl/lookup.php?i=$id');
     try {
       final response = await http.get(url);
@@ -192,6 +245,4 @@ class ApiService {
     }
     return null;
   }
-
-
 }

@@ -43,6 +43,16 @@ class AuthRepository {
     return prefs.getString(_keyEmail);
   }
 
+  //Cambiar nombre
+  Future<bool> setUsername(String username) async {
+  try {
+    await prefs.setString(_keyUsername, username);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
   // Método para verificar credenciales (útil si implementas login posteriormente)
   bool verifyCredentials(String email, String password) {
     final storedEmail = prefs.getString(_keyEmail);

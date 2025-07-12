@@ -7,7 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
 class FavoritesPage extends StatefulWidget {
-  const FavoritesPage({super.key});
+  final Future<void> Function(BuildContext, String) navigateSafely;
+
+  const FavoritesPage({super.key, required this.navigateSafely});
 
   @override
   State<FavoritesPage> createState() => _FavoritesPageState();
@@ -25,6 +27,7 @@ class _FavoritesPageState extends State<FavoritesPage> with RouteAware {
     '/profile',
     '/preferences',
     '/favorites',
+    '/about',
   ];
 
   @override
@@ -50,7 +53,6 @@ class _FavoritesPageState extends State<FavoritesPage> with RouteAware {
 
   @override
   void didPopNext() {
-    // Se llama cuando volvemos a esta pantalla (por ejemplo desde Home)
     loadFavoriteMeals();
   }
 
@@ -96,18 +98,19 @@ class _FavoritesPageState extends State<FavoritesPage> with RouteAware {
     setState(() {});
   }
 
-  void _onSelectPage(int index) {
+  void _onSelectPage(int index) async {
     Navigator.pop(context);
+
     if (index == _selectedIndex) return;
 
     final targetRoute = _routes[index];
-    if (ModalRoute.of(context)?.settings.name == targetRoute) return;
+    final currentRoute = ModalRoute.of(context)?.settings.name;
+    if (currentRoute == targetRoute) return;
 
-    if (Navigator.of(context).canPop()) {
-      Navigator.pushReplacementNamed(context, targetRoute);
-    } else {
-      Navigator.pushNamed(context, targetRoute);
-    }
+    await Future.delayed(const Duration(milliseconds: 150));
+    if (!mounted) return;
+
+    widget.navigateSafely(context, targetRoute);
   }
 
   void _showMealDetail(Meal meal) {
@@ -135,12 +138,10 @@ class _FavoritesPageState extends State<FavoritesPage> with RouteAware {
                 child: Image.network(meal.imageUrl),
               ),
               const SizedBox(height: 12),
-              const Text('Ingredientes:',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('Ingredientes:', style: TextStyle(fontWeight: FontWeight.bold)),
               ...meal.ingredients.map((e) => Text('• $e')),
               const SizedBox(height: 12),
-              const Text('Instrucciones:',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('Instrucciones:', style: TextStyle(fontWeight: FontWeight.bold)),
               Text(meal.instructions),
             ],
           ),
@@ -161,34 +162,84 @@ class _FavoritesPageState extends State<FavoritesPage> with RouteAware {
           ? const Center(child: CircularProgressIndicator())
           : favoriteMeals.isEmpty
               ? const Center(child: Text('No tienes recetas favoritas.'))
-              : ListView.builder(
-                  itemCount: favoriteMeals.length,
-                  itemBuilder: (context, index) {
-                    final meal = favoriteMeals[index];
-                    final isFavorite = favoriteMealIds.contains(meal.idMeal);
+              : Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: GridView.builder(
+                    itemCount: favoriteMeals.length,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 0.7,
+                    ),
+                    itemBuilder: (context, index) {
+                      final meal = favoriteMeals[index];
+                      final isFavorite = favoriteMealIds.contains(meal.idMeal);
 
-                    return Card(
-                      margin:
-                          const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      child: ListTile(
-                        leading: Image.network(
-                          meal.imageUrl,
-                          width: 50,
-                          height: 50,
-                          fit: BoxFit.cover,
-                        ),
-                        title: Text(meal.name),
-                        trailing: IconButton(
-                          icon: Icon(
-                            isFavorite ? Icons.favorite : Icons.favorite_border,
-                            color: isFavorite ? Colors.red : null,
-                          ),
-                          onPressed: () => removeFromFavorites(meal),
-                        ),
+                      return GestureDetector(
                         onTap: () => _showMealDetail(meal),
-                      ),
-                    );
-                  },
+                        child: Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 6,
+                          shadowColor: Colors.black45,
+                          clipBehavior: Clip.antiAlias,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: Stack(
+                                  children: [
+                                    Hero(
+                                      tag: meal.idMeal,
+                                      child: Image.network(
+                                        meal.imageUrl,
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                        loadingBuilder: (context, child, progress) {
+                                          if (progress == null) return child;
+                                          return const Center(child: CircularProgressIndicator());
+                                        },
+                                        errorBuilder: (context, error, stackTrace) =>
+                                            const Center(child: Icon(Icons.error)),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 8,
+                                      right: 8,
+                                      child: CircleAvatar(
+                                        backgroundColor: Colors.white70,
+                                        child: IconButton(
+                                          icon: Icon(
+                                            isFavorite ? Icons.favorite : Icons.favorite_border,
+                                            color: isFavorite ? Colors.red : Colors.grey.shade800,
+                                          ),
+                                          onPressed: () => removeFromFavorites(meal),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Text(
+                                  meal.name,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
     );
   }
