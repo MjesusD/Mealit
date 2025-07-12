@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mealit/services/api_service.dart';
 import 'package:mealit/entity/meal_model.dart';
 import 'package:mealit/widgets/meal_list.dart';
+import 'package:mealit/services/connectivity_service.dart'; 
 
 class FilterExplorerPage extends StatefulWidget {
   const FilterExplorerPage({super.key});
@@ -27,11 +29,27 @@ class _FilterExplorerPageState extends State<FilterExplorerPage> {
 
   Set<String> favoriteMealIds = {};
 
+  late StreamSubscription<bool> _connectivitySubscription;
+
   @override
   void initState() {
     super.initState();
     loadFilters();
     loadFavoriteMeals();
+
+    // Suscribirse a los cambios de conectividad para recargar filtros cuando se reconecte
+    _connectivitySubscription =
+        ConnectivityService.instance.connectionChange.listen((connected) {
+      if (connected) {
+        loadFilters();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription.cancel();
+    super.dispose();
   }
 
   Future<void> loadFilters() async {
@@ -51,6 +69,13 @@ class _FilterExplorerPageState extends State<FilterExplorerPage> {
         areas = [];
         ingredients = [];
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al cargar filtros. Revisa tu conexión.'),
+          ),
+        );
+      }
     }
   }
 
@@ -136,9 +161,7 @@ class _FilterExplorerPageState extends State<FilterExplorerPage> {
                 });
               },
             ),
-
             const SizedBox(height: 12),
-
             buildDropdown(
               'Área',
               areas,
@@ -153,9 +176,7 @@ class _FilterExplorerPageState extends State<FilterExplorerPage> {
                 });
               },
             ),
-
             const SizedBox(height: 12),
-
             buildDropdown(
               'Ingrediente',
               ingredients,
@@ -170,7 +191,6 @@ class _FilterExplorerPageState extends State<FilterExplorerPage> {
                 });
               },
             ),
-
             const SizedBox(height: 20),
             ElevatedButton.icon(
               icon: const Icon(Icons.search),
@@ -178,7 +198,6 @@ class _FilterExplorerPageState extends State<FilterExplorerPage> {
               onPressed: applyFilters,
             ),
             const SizedBox(height: 20),
-
             Expanded(
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())

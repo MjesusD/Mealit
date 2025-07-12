@@ -5,7 +5,7 @@ import 'package:mealit/entity/meal_model.dart';
 
 class MealVoice extends StatefulWidget {
   final Meal meal;
-  final VoidCallback? onClose; // Nuevo parámetro opcional
+  final VoidCallback? onClose;
 
   const MealVoice({super.key, required this.meal, this.onClose});
 
@@ -26,16 +26,28 @@ class _MealVoiceState extends State<MealVoice> {
     setState(() => _isSpeaking = false);
   }
 
-  Future<void> _speak(String text, String langCode) async {
+  Future<void> _speak(String langCode, {bool translated = false}) async {
     if (_isSpeaking) {
       await _stop();
       return;
     }
     setState(() => _isSpeaking = true);
+
+    String textToSpeak;
+
+    if (translated && _translatedIngredients != null && _translatedInstructions != null) {
+      textToSpeak = 'Ingredientes: ${_translatedIngredients!.join(', ')}. '
+          'Instrucciones: $_translatedInstructions';
+    } else {
+      final ingredientsText = widget.meal.ingredients.where((ing) => ing.trim().isNotEmpty).join(', ');
+      textToSpeak = 'Ingredients: $ingredientsText. Instructions: ${widget.meal.instructions}';
+    }
+
     await flutterTts.setLanguage(langCode);
     await flutterTts.setPitch(1.0);
     await flutterTts.setSpeechRate(0.5);
-    await flutterTts.speak(text);
+    await flutterTts.speak(textToSpeak);
+
     flutterTts.setCompletionHandler(() {
       setState(() => _isSpeaking = false);
     });
@@ -83,7 +95,7 @@ class _MealVoiceState extends State<MealVoice> {
     if (widget.onClose != null) widget.onClose!();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final meal = widget.meal;
@@ -117,7 +129,7 @@ class _MealVoiceState extends State<MealVoice> {
               ElevatedButton.icon(
                 icon: Icon(_isSpeaking ? Icons.stop : Icons.volume_up),
                 label: Text(_isSpeaking ? 'Detener' : 'Leer en inglés'),
-                onPressed: () => _speak(meal.instructions, 'en-US'),
+                onPressed: () => _speak('en-US'),
               ),
               ElevatedButton.icon(
                 icon: Icon(_isSpeaking ? Icons.stop : Icons.translate),

@@ -14,6 +14,7 @@ import 'package:mealit/utils/util.dart';
 import 'package:mealit/services/connectivity_service.dart';
 import 'package:mealit/entity/auth_repository.dart';
 
+
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -60,17 +61,16 @@ class MyApp extends StatelessWidget {
 
     final mainRoutes = {'/home', '/login', '/offline', '/'};
     final currentState = navigatorKey.currentState;
-
     if (currentState == null) return;
 
     if (mainRoutes.contains(route)) {
       if (currentState.canPop()) {
-        currentState.pushReplacementNamed(route);
+        await currentState.pushReplacementNamed(route);
       } else {
-        currentState.pushNamedAndRemoveUntil(route, (route) => false);
+        await currentState.pushNamedAndRemoveUntil(route, (route) => false);
       }
     } else {
-      currentState.pushNamed(route);
+      await currentState.pushNamed(route);
     }
   }
 
@@ -91,16 +91,15 @@ class MyApp extends StatelessWidget {
               authRepository: authRepository,
               navigateSafely: navigateSafely,
             ),
-        '/login': (context) => LoginScreen(authRepository: authRepository),
-        '/home': (context) => HomePage(
-              navigateSafely: (ctx, route) => navigateSafely(ctx, route),
+        '/login': (context) => LoginScreen(
+              authRepository: authRepository,
+              navigateSafely: navigateSafely,
             ),
-        '/favorites': (context) => FavoritesPage(
-              navigateSafely: (ctx, route) => navigateSafely(ctx, route),
-            ),
-        '/profile': (context) => const ProfilePage(title: 'Perfil'),
-        '/preferences': (context) => const PreferencesPage(),
-        '/about': (context) => const AboutPage(),
+        '/home': (context) => HomePage(navigateSafely: navigateSafely),
+        '/favorites': (context) => FavoritesPage(navigateSafely: navigateSafely),
+        '/profile': (context) => ProfilePage(title: 'Perfil',navigateSafely: navigateSafely,),
+        '/preferences': (context) => PreferencesPage(navigateSafely: navigateSafely),
+        '/about': (context) => AboutPage(navigateSafely: navigateSafely),
         '/offline': (context) => const OfflinePage(),
       },
     );
@@ -135,17 +134,15 @@ class _SplashWrapperState extends State<SplashWrapper> {
       if (connected && currentContext != null && mounted) {
         scaffoldMessengerKey.currentState?.hideCurrentSnackBar();
 
-        WidgetsBinding.instance.addPostFrameCallback((_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
           if (!mounted) return;
 
           try {
             final currentRoute = ModalRoute.of(currentContext)?.settings.name;
-
             if (currentRoute == '/offline') {
               final isLoggedIn = widget.authRepository.isLoggedIn();
               final target = isLoggedIn ? '/home' : '/login';
-
-              navigatorKey.currentState?.pushReplacementNamed(target);
+              await widget.navigateSafely(currentContext, target);
             }
           } catch (e) {
             debugPrint('Error al manejar reconexión: $e');
@@ -160,7 +157,6 @@ class _SplashWrapperState extends State<SplashWrapper> {
     if (!mounted || _navigated) return;
 
     final isLoggedIn = widget.authRepository.isLoggedIn();
-
     _navigated = true;
     if (!mounted) return;
 

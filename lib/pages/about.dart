@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import '../widgets/drawer.dart';
 
 class AboutPage extends StatelessWidget {
-  const AboutPage({super.key});
+  final Future<void> Function(BuildContext, String) navigateSafely;
+
+  const AboutPage({super.key, required this.navigateSafely});
 
   @override
   Widget build(BuildContext context) {
@@ -12,6 +15,10 @@ class AboutPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Acerca de MealIt'),
         backgroundColor: colorScheme.primary,
+      ),
+      drawer: MainDrawer(
+        selectedIndex: 4, // índice correspondiente al About en tu menú
+        navigateSafely: navigateSafely,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -25,7 +32,6 @@ class AboutPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            
             const SizedBox(height: 12),
             Text(
               'Mealit es una aplicación para descubrir recetas deliciosas y saludables. '

@@ -12,9 +12,9 @@ import '../widgets/meal_voice.dart';
 import '../widgets/home_view.dart';
 
 class HomePage extends StatefulWidget {
-  final Future<void> Function(BuildContext context, String routeName)? navigateSafely;
+  final Future<void> Function(BuildContext context, String routeName) navigateSafely;
 
-  const HomePage({super.key, this.navigateSafely});
+  const HomePage({super.key, required this.navigateSafely});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -44,8 +44,8 @@ class _HomePageState extends State<HomePage> {
 
   bool isListening = false;
 
-  int _selectedIndex = 0;
-  static const List<String> _routes = ['/home', '/profile', '/preferences', '/favorites', '/about'];
+  final int _selectedIndex = 0;
+  
 
   static const _prefKeyRecommendedMeal = 'recommended_meal';
   static const _prefKeyRecommendedDate = 'recommended_date';
@@ -81,7 +81,7 @@ class _HomePageState extends State<HomePage> {
       Future.microtask(() => searchByLetter(selectedLetter));
     }
   }
-    
+
   Future<void> loadFavoriteMeals() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -409,31 +409,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _onSelectPage(int index) async {
-    if (index == _selectedIndex) {
-      Navigator.pop(context);
-      return;
-    }
-
-    Navigator.pop(context); // Cierra el drawer
-
-    setState(() {
-      _selectedIndex = index;
-    });
-
-    final routeName = _routes[index];
-
-    if (widget.navigateSafely != null) {
-      await widget.navigateSafely!(context, routeName);
-    } else {
-      if (index == 0) {
-        Navigator.pushReplacementNamed(context, '/home');
-      } else {
-        Navigator.pushNamed(context, routeName);
-      }
-    }
-  }
-
   void _listen() async {
     if (!isListening) {
       bool available = await speech.initialize(
@@ -481,7 +456,6 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       drawer: MainDrawer(
         selectedIndex: _selectedIndex,
-        onSelectPage: _onSelectPage,
         navigateSafely: widget.navigateSafely,
       ),
       appBar: AppBar(
@@ -556,7 +530,11 @@ class _HomePageState extends State<HomePage> {
                 child: Text(
                   'No hay conexión a internet.\nPor favor, revisa tu conexión.',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
+                  ),
                 ),
               ),
             ),

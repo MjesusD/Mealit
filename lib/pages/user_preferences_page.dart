@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:mealit/entity/user_profile.dart';
 import 'package:mealit/models/profile_storage.dart';
 import '../widgets/drawer.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PreferencesPage extends StatefulWidget {
-  const PreferencesPage({super.key});
+  final Future<void> Function(BuildContext, String) navigateSafely;
+
+  const PreferencesPage({super.key, required this.navigateSafely});
 
   @override
   State<PreferencesPage> createState() => _PreferencesPageState();
@@ -26,9 +29,9 @@ class _PreferencesPageState extends State<PreferencesPage> {
   final TextEditingController _habitController = TextEditingController();
   List<String> _dietaryHabitsList = [];
 
-  // Drawer selected index
   final int _drawerSelectedIndex = 2;
-  static const List<String> _routes = ['/home', '/profile', '/preferences', '/favorites', '/about'];
+
+  String _shareLanguage = 'en'; // idioma para compartir recetas ('en' o 'es')
 
   @override
   void initState() {
@@ -54,13 +57,16 @@ class _PreferencesPageState extends State<PreferencesPage> {
         );
 
     _selectedPrefs = {
-      for (var key in _availablePreferences.keys)
-        key: profile.dietaryPreferences.contains(key),
+      for (var key in _availablePreferences.keys) key: profile.dietaryPreferences.contains(key),
     };
 
     _dietaryHabitsList = profile.dietaryHabits.isEmpty
         ? []
         : profile.dietaryHabits.split(',').map((e) => e.trim()).toList();
+
+    // Cargar preferencia de idioma para compartir recetas
+    final sp = await SharedPreferences.getInstance();
+    _shareLanguage = sp.getString('share_favorites_language') ?? 'en';
 
     if (!mounted) return;
     setState(() {
@@ -70,8 +76,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
 
   Future<void> _savePreferences() async {
     final updatedProfile = profile.copyWith(
-      dietaryPreferences:
-          _selectedPrefs.entries.where((e) => e.value).map((e) => e.key).toList(),
+      dietaryPreferences: _selectedPrefs.entries.where((e) => e.value).map((e) => e.key).toList(),
       dietaryHabits: _dietaryHabitsList.join(', '),
     );
 
@@ -87,6 +92,22 @@ class _PreferencesPageState extends State<PreferencesPage> {
       const SnackBar(
         content: Text('Preferencias guardadas'),
         duration: Duration(seconds: 1),
+      ),
+    );
+  }
+
+  Future<void> _saveShareLanguage(String lang) async {
+    final sp = await SharedPreferences.getInstance();
+    await sp.setString('share_favorites_language', lang);
+
+    setState(() {
+      _shareLanguage = lang;
+    });
+    if(!mounted)return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Idioma para compartir recetas guardado: ${lang == 'es' ? 'Español' : 'Inglés'}'),
+        duration: const Duration(seconds: 1),
       ),
     );
   }
@@ -117,30 +138,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
   }
 
   Future<bool> _onWillPop() async {
-    // Guardado automático, sin alerta al salir
-    return true;
-  }
-
-  void _onSelectPage(int index) {
-    if (index == _drawerSelectedIndex) {
-      Navigator.pop(context);
-      return;
-    }
-
-    Navigator.pop(context);
-
-    final targetRoute = _routes[index];
-
-    if (ModalRoute.of(context)?.settings.name == targetRoute) {
-      // Ya estamos en la ruta, no navegamos
-      return;
-    }
-
-    if (Navigator.of(context).canPop()) {
-      Navigator.pushReplacementNamed(context, targetRoute);
-    } else {
-      Navigator.pushNamed(context, targetRoute);
-    }
+    return true; // Puedes agregar lógica aquí si quieres controlar la salida
   }
 
   @override
@@ -156,7 +154,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
       child: Scaffold(
         drawer: MainDrawer(
           selectedIndex: _drawerSelectedIndex,
-          onSelectPage: _onSelectPage,
+          navigateSafely: widget.navigateSafely,
         ),
         appBar: AppBar(title: const Text('Preferencias')),
         body: Padding(
@@ -164,11 +162,39 @@ class _PreferencesPageState extends State<PreferencesPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+
+              // Selector idioma para compartir recetas favoritas
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Text(
+                    'Enviar recetas favoritas en:',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  DropdownButton<String>(
+                    value: _shareLanguage,
+                    items: const [
+                      DropdownMenuItem(value: 'en', child: Text(' Inglés')),
+                      DropdownMenuItem(value: 'es', child: Text(' Español')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) {
+                        _saveShareLanguage(val);
+                      }
+                    },
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+              
               Text(
                 'Elige tus preferencias alimenticias',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 12),
+
+
               Expanded(
                 child: ListView(
                   children: [
@@ -177,8 +203,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
                       final label = entry.value['label'] as String;
                       final icon = entry.value['icon'] as IconData;
                       return CheckboxListTile(
-                        secondary:
-                            Icon(icon, color: Theme.of(context).colorScheme.primary),
+                        secondary: Icon(icon, color: Theme.of(context).colorScheme.primary),
                         title: Text(label),
                         value: _selectedPrefs[key] ?? false,
                         onChanged: (val) => _onPreferenceChanged(key, val),

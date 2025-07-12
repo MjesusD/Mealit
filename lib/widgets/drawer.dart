@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 
 class MainDrawer extends StatelessWidget {
   final int selectedIndex;
-  final void Function(int) onSelectPage;
   final Future<void> Function(BuildContext context, String routeName)? navigateSafely;
 
   const MainDrawer({
     super.key,
     required this.selectedIndex,
-    required this.onSelectPage,
     this.navigateSafely,
   });
 
@@ -33,7 +31,7 @@ class MainDrawer extends StatelessWidget {
                   SizedBox(
                     height: 80,
                     child: Image.asset(
-                      'assets/icons/home_logo.png', 
+                      'assets/icons/home_logo.png',
                       fit: BoxFit.contain,
                     ),
                   ),
@@ -49,38 +47,38 @@ class MainDrawer extends StatelessWidget {
               ),
             ),
             _buildTile(
+              context: context,
               icon: Icons.home,
               label: 'Inicio',
               index: 0,
-              context: context,
               routeName: '/home',
             ),
             _buildTile(
+              context: context,
               icon: Icons.person,
               label: 'Perfil',
               index: 1,
-              context: context,
               routeName: '/profile',
             ),
             _buildTile(
+              context: context,
               icon: Icons.settings,
               label: 'Preferencias',
               index: 2,
-              context: context,
               routeName: '/preferences',
             ),
             _buildTile(
+              context: context,
               icon: Icons.favorite,
               label: 'Favoritos',
               index: 3,
-              context: context,
               routeName: '/favorites',
             ),
             _buildTile(
+              context: context,
               icon: Icons.info_outline,
               label: 'Acerca de',
               index: 4,
-              context: context,
               routeName: '/about',
             ),
           ],
@@ -90,17 +88,20 @@ class MainDrawer extends StatelessWidget {
   }
 
   Widget _buildTile({
+    required BuildContext context,
     required IconData icon,
     required String label,
     required int index,
-    required BuildContext context,
     required String routeName,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     final isSelected = selectedIndex == index;
 
     return ListTile(
-      leading: Icon(icon, color: isSelected ? colorScheme.primary : colorScheme.onSurface),
+      leading: Icon(
+        icon,
+        color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+      ),
       title: Text(
         label,
         style: TextStyle(
@@ -117,7 +118,7 @@ class MainDrawer extends StatelessWidget {
           if (navigateSafely != null) {
             await navigateSafely!(context, routeName);
           } else {
-            onSelectPage(index);
+            Navigator.pushNamed(context, routeName);
           }
         }
       },

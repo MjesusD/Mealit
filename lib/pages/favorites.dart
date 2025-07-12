@@ -1,8 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mealit/entity/meal_model.dart';
 import 'package:mealit/services/api_service.dart';
 import '../widgets/drawer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+
+// Agregar import para traducción
+import 'package:translator/translator.dart';
 
 final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
 
@@ -22,13 +29,6 @@ class _FavoritesPageState extends State<FavoritesPage> with RouteAware {
   bool isLoading = true;
 
   final int _selectedIndex = 3;
-  static const List<String> _routes = [
-    '/home',
-    '/profile',
-    '/preferences',
-    '/favorites',
-    '/about',
-  ];
 
   @override
   void initState() {
@@ -57,9 +57,7 @@ class _FavoritesPageState extends State<FavoritesPage> with RouteAware {
   }
 
   Future<void> loadFavoriteMeals() async {
-    setState(() {
-      isLoading = true;
-    });
+    setState(() => isLoading = true);
 
     final prefs = await SharedPreferences.getInstance();
     final favIds = prefs.getStringList('favoriteMealIds') ?? [];
@@ -96,21 +94,6 @@ class _FavoritesPageState extends State<FavoritesPage> with RouteAware {
     await prefs.setStringList('favoriteMealIds', favoriteMealIds.toList());
 
     setState(() {});
-  }
-
-  void _onSelectPage(int index) async {
-    Navigator.pop(context);
-
-    if (index == _selectedIndex) return;
-
-    final targetRoute = _routes[index];
-    final currentRoute = ModalRoute.of(context)?.settings.name;
-    if (currentRoute == targetRoute) return;
-
-    await Future.delayed(const Duration(milliseconds: 150));
-    if (!mounted) return;
-
-    widget.navigateSafely(context, targetRoute);
   }
 
   void _showMealDetail(Meal meal) {
@@ -150,12 +133,66 @@ class _FavoritesPageState extends State<FavoritesPage> with RouteAware {
     );
   }
 
+  Future<void> compartirRecetaComoPostal(Meal meal) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lang = prefs.getString('share_favorites_language') ?? 'en';
+
+      final translator = GoogleTranslator();
+
+      String name = meal.name;
+      List<String> ingredients = meal.ingredients;
+      String instructions = meal.instructions;
+
+      if (lang == 'es') {
+        // Traducir al español
+        name = (await translator.translate(name, to: 'es')).text;
+        final translatedIngredientsFutures =
+            ingredients.map((ing) => translator.translate(ing, to: 'es')).toList();
+        final translatedIngredients = await Future.wait(translatedIngredientsFutures);
+        ingredients = translatedIngredients.map((t) => t.text).toList();
+        instructions = (await translator.translate(instructions, to: 'es')).text;
+      }
+
+      final response = await http.get(Uri.parse(meal.imageUrl));
+      final bytes = response.bodyBytes;
+
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/${meal.idMeal}.jpg');
+      await file.writeAsBytes(bytes);
+
+      final texto = '''
+🍽️ $name
+
+📋 Ingredientes:
+${ingredients.map((e) => '• $e').join('\n')}
+
+👨‍🍳 Instrucciones:
+$instructions
+
+¡Descubre más recetas con MealIt! 🌟
+''';
+
+      if (!mounted) return;
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: texto,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error al compartir la receta.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: MainDrawer(
         selectedIndex: _selectedIndex,
-        onSelectPage: _onSelectPage,
+        navigateSafely: widget.navigateSafely,
       ),
       appBar: AppBar(title: const Text('Recetas Favoritas')),
       body: isLoading
@@ -208,15 +245,32 @@ class _FavoritesPageState extends State<FavoritesPage> with RouteAware {
                                     Positioned(
                                       top: 8,
                                       right: 8,
-                                      child: CircleAvatar(
-                                        backgroundColor: Colors.white70,
-                                        child: IconButton(
-                                          icon: Icon(
-                                            isFavorite ? Icons.favorite : Icons.favorite_border,
-                                            color: isFavorite ? Colors.red : Colors.grey.shade800,
+                                      child: Column(
+                                        children: [
+                                          CircleAvatar(
+                                            backgroundColor: Colors.white70,
+                                            child: IconButton(
+                                              icon: Icon(
+                                                isFavorite
+                                                    ? Icons.favorite
+                                                    : Icons.favorite_border,
+                                                color: isFavorite
+                                                    ? Colors.red
+                                                    : Colors.grey.shade800,
+                                              ),
+                                              onPressed: () => removeFromFavorites(meal),
+                                            ),
                                           ),
-                                          onPressed: () => removeFromFavorites(meal),
-                                        ),
+                                          const SizedBox(height: 6),
+                                          CircleAvatar(
+                                            backgroundColor: Colors.white70,
+                                            child: IconButton(
+                                              icon: const Icon(Icons.share),
+                                              onPressed: () =>
+                                                  compartirRecetaComoPostal(meal),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],

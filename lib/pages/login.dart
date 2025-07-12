@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:mealit/pages/home.dart';
 import '../entity/auth_repository.dart';
 
 class LoginScreen extends StatefulWidget {
   final AuthRepository authRepository;
+  final Future<void> Function(BuildContext context, String routeName) navigateSafely;
 
-  const LoginScreen({super.key, required this.authRepository});
+  const LoginScreen({super.key, required this.authRepository, required this.navigateSafely});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -47,14 +47,13 @@ class _LoginScreenState extends State<LoginScreen> {
     bool success = false;
 
     if (_authMode == AuthMode.login) {
-      // Solo verificar, no volver a guardar si ya está registrado
-      success = _authRepo.verifyCredentials(email, password);
+      success = await _authRepo.login(email, password);
       if (!success) {
         _error = 'Correo o contraseña incorrectos';
       }
     } else {
       // Registro: guardar usuario nuevo
-      success = await _authRepo.login(username, email, password);
+      success = await _authRepo.register(username, email, password);
       if (!success) {
         _error = 'Error al registrar usuario';
       }
@@ -62,15 +61,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (success) {
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomePage()),
-      );
+      // Navega usando navigateSafely para HomePage con su ruta
+      await widget.navigateSafely(context, '/home');
     } else {
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
       });
-      if (_error != null && mounted) {
+      if (_error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(_error!)),
         );
@@ -100,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final textTheme = theme.textTheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surfaceBright,
+      backgroundColor: colorScheme.surface,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 32),
