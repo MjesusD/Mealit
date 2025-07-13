@@ -267,7 +267,7 @@ class HomeView extends StatelessWidget {
                     const DropdownMenuItem(value: null, child: Text('Todos')),
                     ...filterOptions
                         .map((val) => DropdownMenuItem(value: val, child: Text(val)))
-                        .toList(),
+                        ,
                   ],
                   onChanged: onFilterValueChanged,
                   decoration: InputDecoration(
