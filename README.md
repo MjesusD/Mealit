@@ -3,7 +3,7 @@
 
 MealIt es una aplicación diseñada para amantes de la cocina que desean descubrir recetas saludables y deliciosas, organizarlas fácilmente y compartir sus favoritas. Permite explorar recetas por categorías, ingredientes o regiones, guardar favoritas, y crear tus propias recetas con imágenes. Además, incluye funciones de traducción automática y lectura en voz alta para mejorar la experiencia de descubrimiento culinario.
 
-<img width="1000" height="1000" alt="inicio_logo" src="https://github.com/user-attachments/assets/55af268f-4008-48e9-8998-47179d951760" />
+<img width="200" height="200" alt="inicio_logo" src="https://github.com/user-attachments/assets/55af268f-4008-48e9-8998-47179d951760" />
 
 ## Características
 
@@ -49,9 +49,8 @@ MealIt es una aplicación diseñada para amantes de la cocina que desean descubr
 ## Contenido 
 
 
-
 ## Instalar 
 
-
+[Descargar MealIt v1.0.0](https://github.com/MjesusD/Mealit/releases/tag/v1.0.0)
 
 ## Links
