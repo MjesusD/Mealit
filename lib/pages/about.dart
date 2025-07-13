@@ -33,10 +33,11 @@ class AboutPage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             const SizedBox(height: 12),
-            Text(
-              'Mealit es una aplicación para descubrir recetas deliciosas y saludables. '
-              'Puedes explorar comidas de diferentes categorías, guardar tus favoritas, '
-              'y personalizar tus preferencias alimenticias.',
+           Text(
+              'Mealit te ofrece la posibilidad de descubrir recetas saludables y deliciosas, '
+              'guardarlas en favoritos, y documentar tus propias creaciones de forma sencilla. '
+              'Cada receta incluye una opción de audio con traducción y un botón para compartir, '
+              'en inglés o español, según tus preferencias.',
               style: textTheme.bodyLarge,
               textAlign: TextAlign.center,
             ),

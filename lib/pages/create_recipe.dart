@@ -56,9 +56,7 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
       final picked = await _picker.pickImage(source: source, maxWidth: 600, maxHeight: 600);
       if (picked != null) {
         if (!mounted) return;
-        setState(() {
-          _imagePath = picked.path;
-        });
+        setState(() => _imagePath = picked.path);
       }
     } catch (e) {
       if (!mounted) return;
@@ -76,7 +74,6 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
         _ingredientInputController.clear();
       });
     } else if (_ingredients.contains(trimmed)) {
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ingrediente ya agregado')),
       );
@@ -84,9 +81,7 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
   }
 
   void _removeIngredient(int index) {
-    setState(() {
-      _ingredients.removeAt(index);
-    });
+    setState(() => _ingredients.removeAt(index));
   }
 
   Future<void> _saveRecipe() async {
@@ -113,17 +108,17 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
       steps: _stepsController.text.trim(),
       ingredients: _ingredients,
       imagePath: _imagePath,
-      listName: _listNameController.text.trim().isEmpty ? 'General' : _listNameController.text.trim(),
+      listName: _listNameController.text.trim().isEmpty
+          ? 'General'
+          : _listNameController.text.trim(),
     );
 
     await RecipeStorage.addOrUpdateRecipe(recipe);
 
     if (!mounted) return;
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(_isEditing ? 'Receta actualizada' : 'Receta creada')),
     );
-
     Navigator.of(context).pop(recipe);
   }
 
@@ -133,98 +128,123 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Editar Receta' : 'Crear Receta'),
-      ),
+      appBar: AppBar(title: Text(_isEditing ? 'Editar Receta' : 'Crear Receta')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Nombre'),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Requerido' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Descripción'),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _listNameController,
-                decoration: const InputDecoration(labelText: 'Categoría (Lista)'),
-              ),
-              const SizedBox(height: 12),
-              Text('Ingredientes', style: theme.textTheme.titleMedium),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _ingredientInputController,
-                      decoration: const InputDecoration(hintText: 'Agregar ingrediente'),
-                      onSubmitted: (_) => _addIngredient(),
+              _buildCard([
+                _buildTextField(_nameController, 'Nombre', validator: true),
+                _buildTextField(_descriptionController, 'Descripción', maxLines: 2),
+                _buildTextField(_listNameController, 'Categoría (Lista)'),
+              ]),
+              const SizedBox(height: 16),
+              _buildCard([
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _ingredientInputController,
+                        decoration: const InputDecoration(hintText: 'Agregar ingrediente'),
+                        onSubmitted: (_) => _addIngredient(),
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle),
-                    color: colorScheme.primary,
-                    onPressed: _addIngredient,
-                  ),
-                ],
-              ),
-              Wrap(
-                spacing: 8,
-                children: List.generate(_ingredients.length, (index) {
-                  final ingredient = _ingredients[index];
-                  return Chip(
-                    label: Text(ingredient),
-                    onDeleted: () => _removeIngredient(index),
-                  );
-                }),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _stepsController,
-                decoration: const InputDecoration(labelText: 'Pasos'),
-                maxLines: 5,
-                validator: (v) => v == null || v.trim().isEmpty ? 'Requerido' : null,
-              ),
-              const SizedBox(height: 12),
-              Text('Imagen', style: theme.textTheme.titleMedium),
-              const SizedBox(height: 6),
-              if (_imagePath.isNotEmpty)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.file(File(_imagePath), height: 200, fit: BoxFit.cover),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle),
+                      color: colorScheme.primary,
+                      onPressed: _addIngredient,
+                    ),
+                  ],
                 ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.photo_library),
-                    label: const Text('Galería'),
-                    onPressed: () => _pickImage(ImageSource.gallery),
+                Wrap(
+                  spacing: 8,
+                  children: List.generate(_ingredients.length, (i) {
+                    final ing = _ingredients[i];
+                    return Chip(
+                      label: Text(ing),
+                      onDeleted: () => _removeIngredient(i),
+                    );
+                  }),
+                ),
+              ], title: 'Ingredientes'),
+              const SizedBox(height: 16),
+              _buildCard([
+                _buildTextField(_stepsController, 'Pasos', maxLines: 5, validator: true),
+              ]),
+              const SizedBox(height: 16),
+              _buildCard([
+                if (_imagePath.isNotEmpty)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.file(File(_imagePath), height: 200, fit: BoxFit.cover),
                   ),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.camera_alt),
-                    label: const Text('Cámara'),
-                    onPressed: () => _pickImage(ImageSource.camera),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.photo_library),
+                      label: const Text('Galería'),
+                      onPressed: () => _pickImage(ImageSource.gallery),
+                    ),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.camera_alt),
+                      label: const Text('Cámara'),
+                      onPressed: () => _pickImage(ImageSource.camera),
+                    ),
+                  ],
+                ),
+              ], title: 'Imagen'),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: Icon(_isEditing ? Icons.save : Icons.check_circle),
+                  label: Text(_isEditing ? 'Guardar cambios' : 'Crear receta'),
+                  onPressed: _saveRecipe,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    textStyle: const TextStyle(fontSize: 16),
                   ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _saveRecipe,
-                child: Text(_isEditing ? 'Guardar cambios' : 'Crear receta'),
+                ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String label,
+      {int maxLines = 1, bool validator = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: TextFormField(
+        controller: controller,
+        maxLines: maxLines,
+        decoration: InputDecoration(labelText: label),
+        validator: validator ? (v) => v == null || v.trim().isEmpty ? 'Requerido' : null : null,
+      ),
+    );
+  }
+
+  Widget _buildCard(List<Widget> children, {String? title}) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (title != null) ...[
+              Text(title, style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 12),
+            ],
+            ...children,
+          ],
         ),
       ),
     );

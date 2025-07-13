@@ -16,52 +16,69 @@ class MealVoice extends StatefulWidget {
 class _MealVoiceState extends State<MealVoice> {
   final FlutterTts flutterTts = FlutterTts();
   final GoogleTranslator translator = GoogleTranslator();
-  bool _isSpeaking = false;
+  bool _isSpeakingEnglish = false;
+  bool _isSpeakingSpanish = false;
   bool _translated = false;
   String? _translatedInstructions;
   List<String>? _translatedIngredients;
 
   Future<void> _stop() async {
     await flutterTts.stop();
-    setState(() => _isSpeaking = false);
+    setState(() {
+      _isSpeakingEnglish = false;
+      _isSpeakingSpanish = false;
+    });
   }
 
-  Future<void> _speak(String langCode, {bool translated = false}) async {
-    if (_isSpeaking) {
+  Future<void> _speakEnglish() async {
+    if (_isSpeakingEnglish) {
       await _stop();
       return;
     }
-    setState(() => _isSpeaking = true);
 
-    String textToSpeak;
-
-    if (translated && _translatedIngredients != null && _translatedInstructions != null) {
-      textToSpeak = 'Ingredientes: ${_translatedIngredients!.join(', ')}. '
-          'Instrucciones: $_translatedInstructions';
-    } else {
-      final ingredientsText = widget.meal.ingredients.where((ing) => ing.trim().isNotEmpty).join(', ');
-      textToSpeak = 'Ingredients: $ingredientsText. Instructions: ${widget.meal.instructions}';
+    // Si está hablando en español, detener antes de hablar inglés
+    if (_isSpeakingSpanish) {
+      await _stop();
     }
 
-    await flutterTts.setLanguage(langCode);
+    setState(() {
+      _isSpeakingEnglish = true;
+      _isSpeakingSpanish = false;
+    });
+
+    final ingredientsText =
+        widget.meal.ingredients.where((ing) => ing.trim().isNotEmpty).join(', ');
+    final textToSpeak =
+        'Ingredients: $ingredientsText. Instructions: ${widget.meal.instructions}';
+
+    await flutterTts.setLanguage('en-US');
     await flutterTts.setPitch(1.0);
     await flutterTts.setSpeechRate(0.5);
     await flutterTts.speak(textToSpeak);
 
     flutterTts.setCompletionHandler(() {
-      setState(() => _isSpeaking = false);
+      setState(() => _isSpeakingEnglish = false);
     });
   }
 
-  Future<void> _translateAndSpeakAll() async {
-    if (_isSpeaking) {
+  Future<void> _translateAndSpeakSpanish() async {
+    if (_isSpeakingSpanish) {
       await _stop();
       return;
     }
 
-    setState(() => _isSpeaking = true);
+    // Si está hablando en inglés, detener antes de hablar español
+    if (_isSpeakingEnglish) {
+      await _stop();
+    }
 
-    final translatedInstructions = await translator.translate(widget.meal.instructions, to: 'es');
+    setState(() {
+      _isSpeakingSpanish = true;
+      _isSpeakingEnglish = false;
+    });
+
+    final translatedInstructions =
+        await translator.translate(widget.meal.instructions, to: 'es');
     final translatedIngredients = <String>[];
 
     for (var ing in widget.meal.ingredients) {
@@ -76,7 +93,8 @@ class _MealVoiceState extends State<MealVoice> {
       _translatedIngredients = translatedIngredients;
     });
 
-    final fullText = 'Ingredientes: ${translatedIngredients.join(', ')}. '
+    final fullText =
+        'Ingredientes: ${translatedIngredients.join(', ')}. '
         'Instrucciones: ${translatedInstructions.text}';
 
     await flutterTts.setLanguage('es-ES');
@@ -85,7 +103,7 @@ class _MealVoiceState extends State<MealVoice> {
     await flutterTts.speak(fullText);
 
     flutterTts.setCompletionHandler(() {
-      setState(() => _isSpeaking = false);
+      setState(() => _isSpeakingSpanish = false);
     });
   }
 
@@ -101,9 +119,13 @@ class _MealVoiceState extends State<MealVoice> {
     final meal = widget.meal;
 
     final ingredientsToShow =
-        _translated && _translatedIngredients != null ? _translatedIngredients! : meal.ingredients;
+        _translated && _translatedIngredients != null
+            ? _translatedIngredients!
+            : meal.ingredients;
     final instructionsToShow =
-        _translated && _translatedInstructions != null ? _translatedInstructions! : meal.instructions;
+        _translated && _translatedInstructions != null
+            ? _translatedInstructions!
+            : meal.instructions;
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -127,14 +149,14 @@ class _MealVoiceState extends State<MealVoice> {
             runSpacing: 8,
             children: [
               ElevatedButton.icon(
-                icon: Icon(_isSpeaking ? Icons.stop : Icons.volume_up),
-                label: Text(_isSpeaking ? 'Detener' : 'Leer en inglés'),
-                onPressed: () => _speak('en-US'),
+                icon: Icon(_isSpeakingEnglish ? Icons.stop : Icons.volume_up),
+                label: Text(_isSpeakingEnglish ? 'Detener' : 'Leer en inglés'),
+                onPressed: _speakEnglish,
               ),
               ElevatedButton.icon(
-                icon: Icon(_isSpeaking ? Icons.stop : Icons.translate),
-                label: Text(_isSpeaking ? 'Detener' : 'Traducir y leer todo'),
-                onPressed: _translateAndSpeakAll,
+                icon: Icon(_isSpeakingSpanish ? Icons.stop : Icons.translate),
+                label: Text(_isSpeakingSpanish ? 'Detener' : 'Traducir y leer todo'),
+                onPressed: _translateAndSpeakSpanish,
               ),
             ],
           ),

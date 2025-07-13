@@ -138,12 +138,13 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      drawer: MainDrawer(
-        selectedIndex: _drawerSelectedIndex,
-        navigateSafely: widget.navigateSafely,
-      ),
-      appBar: AppBar(
+    Widget bodyContent;
+    PreferredSizeWidget? appBar;
+    Widget? drawer;
+
+    if (_internalTabIndex == 0) {
+      // Perfil con AppBar y Drawer
+      appBar = AppBar(
         title: Text(widget.title, style: TextStyle(color: colorScheme.onPrimary)),
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
@@ -154,22 +155,40 @@ class _ProfilePageState extends State<ProfilePage> {
             onPressed: _handleEditProfile,
           ),
         ],
-      ),
-      body: profile == null
+      );
+      drawer = MainDrawer(
+        selectedIndex: _drawerSelectedIndex,
+        navigateSafely: widget.navigateSafely,
+      );
+      bodyContent = profile == null
           ? const Center(child: CircularProgressIndicator())
-          : IndexedStack(
-              index: _internalTabIndex,
-              children: [
-                ProfileContent(profile: profile!),
-                MyLibraryPage(
-                  key: _libraryKey,
-                  onRecipeEditedOrSaved: () {
-                    _libraryKey.currentState?.reloadRecipes();
-                  },
-                ),
-                Container(), // Placeholder para CreateRecipePage
-              ],
-            ),
+          : ProfileContent(profile: profile!);
+    } else if (_internalTabIndex == 1) {
+      // Mis Recetas sin AppBar ni Drawer
+      appBar = null;
+      drawer = null;
+      bodyContent = MyLibraryPage(
+        key: _libraryKey,
+        onRecipeEditedOrSaved: () {
+          _libraryKey.currentState?.reloadRecipes();
+        },
+        onBack: () {
+          setState(() {
+            _internalTabIndex = 0;
+          });
+        },
+      );
+    } else {
+      // Crear Receta sin AppBar ni Drawer
+      appBar = null;
+      drawer = null;
+      bodyContent = Container();
+    }
+
+    return Scaffold(
+      appBar: appBar,
+      drawer: drawer,
+      body: bodyContent,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _internalTabIndex,
         items: const [
