@@ -48,6 +48,12 @@ MealIt es una aplicación diseñada para amantes de la cocina que desean descubr
 
 ## Contenido 
 
+### Diagrama de flujo:
+<img src="https://github.com/user-attachments/assets/f7166679-0258-4884-8e3a-5c72e8a632a4" width="200" alt="DiagramaFlujoMealit">
+
+### Diagrama Jerarquico:
+<img src="https://github.com/user-attachments/assets/b76e8969-f128-42a3-9737-b96410a94576" width="300" alt="DiagramaFlujo2Mealit">
+
 
 ## Instalar 
 
