@@ -31,7 +31,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
 
   final int _drawerSelectedIndex = 2;
 
-  String _shareLanguage = 'en'; // idioma para compartir recetas ('en' o 'es')
+  String _shareLanguage = 'en'; // idioma para compartir recetas 
 
   @override
   void initState() {
@@ -138,7 +138,7 @@ class _PreferencesPageState extends State<PreferencesPage> {
   }
 
   Future<bool> _onWillPop() async {
-    return true; // Puedes agregar lógica aquí si quieres controlar la salida
+    return true; //lógica para controlar la salida
   }
 
   @override

@@ -208,7 +208,7 @@ class _FilterExplorerPageState extends State<FilterExplorerPage> {
                           favoriteMealIds: favoriteMealIds,
                           onToggleFavorite: onToggleFavorite,
                           onMealTap: (meal) {
-                            // Implementa el detalle si quieres
+                            // Implementar el detalle 
                           },
                         ),
             ),

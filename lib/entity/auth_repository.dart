@@ -4,7 +4,7 @@ class AuthRepository {
   static const _keyIsLoggedIn = 'isLoggedIn';
   static const _keyUsername = 'username';
   static const _keyEmail = 'email';
-  static const _keyPassword = 'password'; // no seguro almacenar contraseña en texto plano
+  static const _keyPassword = 'password'; 
 
   final SharedPreferences prefs;
 

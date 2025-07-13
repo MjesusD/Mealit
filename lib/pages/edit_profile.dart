@@ -155,7 +155,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Nombre'),
-              readOnly: true, // Opcional: si quieres que el nombre no sea editable
+              readOnly: true, 
             ),
             TextField(
               controller: _ageController,

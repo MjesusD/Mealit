@@ -14,7 +14,7 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
-    // Obtén estado inicial de conexión
+    // Obtiene estado inicial de conexión
     _hasConnection = ConnectivityService.instance.hasConnection;
 
     // Escucha cambios en la conexión para actualizar UI

@@ -17,7 +17,7 @@ class AboutPage extends StatelessWidget {
         backgroundColor: colorScheme.primary,
       ),
       drawer: MainDrawer(
-        selectedIndex: 4, // índice correspondiente al About en tu menú
+        selectedIndex: 4, 
         navigateSafely: navigateSafely,
       ),
       body: Padding(

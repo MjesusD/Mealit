@@ -31,7 +31,7 @@ class HomeView extends StatelessWidget {
   final Set<String> favoriteMealIds;
   final void Function(Meal meal) onToggleFavorite;
 
-  final bool hasConnection;  // NUEVO campo para estado de conexión
+  final bool hasConnection;  // campo para estado de conexión
 
   const HomeView({
     super.key,

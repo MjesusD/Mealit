@@ -29,7 +29,7 @@ class ConnectivityService {
         _updateConnectionStatus(result);
       },
       onError: (error) {
-        // Opcional: loguear error
+        // loguear error
       },
     );
   }

@@ -43,7 +43,7 @@ class _ConnectivityBannerState extends State<ConnectivityBanner> {
     super.dispose();
   }
 
-  // Opción para excluir splash y login si quieres, aunque en main decides no envolver esas rutas
+  // Opción para excluir splash y login (op)
   bool get _isExcludedPage {
     final runtimeTypeName = widget.child.runtimeType.toString();
     return runtimeTypeName.contains('Splash') || runtimeTypeName.contains('Login');

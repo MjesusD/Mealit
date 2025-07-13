@@ -36,7 +36,7 @@ class _MealVoiceState extends State<MealVoice> {
       return;
     }
 
-    // Si está hablando en español, detener antes de hablar inglés
+    // Si está hablando en español detener antes de hablar inglés
     if (_isSpeakingSpanish) {
       await _stop();
     }
@@ -67,7 +67,7 @@ class _MealVoiceState extends State<MealVoice> {
       return;
     }
 
-    // Si está hablando en inglés, detener antes de hablar español
+    // Si está hablando en inglés detener antes de hablar español
     if (_isSpeakingEnglish) {
       await _stop();
     }
